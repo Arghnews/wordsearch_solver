@@ -9,13 +9,17 @@ set (CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package (fmt CONFIG REQUIRED)
 find_package (spdlog REQUIRED)
+# find_package (Boost 1.70.0 REQUIRED COMPONENTS container)
 
 add_executable(${PROJECT_NAME} main.cpp)
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_EXTENSIONS OFF)
 
-target_compile_options (${PROJECT_NAME} PRIVATE -g -Wall -Wextra -pedantic -Wfloat-equal -Wwrite-strings -Wswitch-enum -Wunreachable-code -Wconversion -Wcast-qual -Wstrict-overflow=5 -Werror=shadow -O0 -march=native -pipe -fsanitize=undefined -Werror=uninitialized -Werror=return-type)
+target_compile_options (${PROJECT_NAME} PRIVATE -g -Wall -Wextra -pedantic -Wfloat-equal -Wwrite-strings -Wswitch-enum -Wunreachable-code -Wconversion -Wcast-qual -Wstrict-overflow=5 -Werror=shadow -march=native -pipe -fsanitize=undefined -Werror=uninitialized -Werror=return-type -pg -O2)
+
+# add_definitions (-DOLD_SURROUNDING)
+# set_target_properties (${PROJECT_NAME} PROPERTIES COMPILE_DEFINITIONS "OLD_SURROUNDING")
 
 # Seems to have worked well for header only lib
 # magic enum NEEDS either clang or gcc >= 9
@@ -24,9 +28,9 @@ target_include_directories (magic_enum INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/mag
 # This line is supposed to help with telling IDEs and therefore I'd of assumed the compile_commands.json about this, however seems to work without it
 # target_sources (magic_enum INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/magic_enum/include/magic_enum.hpp)
 
-message (${CMAKE_CURRENT_SOURCE_DIR})
+# message (${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries (${PROJECT_NAME} PRIVATE fmt::fmt spdlog::spdlog magic_enum "-fsanitize=undefined" -lstdc++fs)
+target_link_libraries (${PROJECT_NAME} PRIVATE fmt::fmt spdlog::spdlog magic_enum "-fsanitize=undefined" -lstdc++fs -pg)
 
 add_custom_command (TARGET ${PROJECT_NAME} POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E
