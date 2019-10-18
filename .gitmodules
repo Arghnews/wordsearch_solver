@@ -1,0 +1,3 @@
+[submodule "Lyra"]
+	path = Lyra
+	url = git@github.com:bfgroup/Lyra.git
