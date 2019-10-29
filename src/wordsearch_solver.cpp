@@ -9,6 +9,7 @@
 #include <type_traits>
 #include <tuple>
 #include <utility>
+#include <string>
 #include <vector>
 
 #include <fmt/format.h>
@@ -104,20 +105,6 @@ void surrounding(const std::size_t i, const std::size_t j,
   }
 }
 
-template <class Indexes>
-std::string indexes_to_word(const Grid& grid, const Indexes& tail)
-{
-  std::string word;
-  word.reserve(tail.size());
-  spdlog::debug("Grid: {}", grid);
-  for (const auto [i, j]: tail)
-  {
-    spdlog::debug("Index [{}, {}]", i, j);
-    word.push_back(grid->at(i).at(j));
-  }
-  return word;
-}
-
 /* Sadly from looking at a call graph it seems that the std::string_view is not
  * optimised out whereas passing needle by const& is */
 /* template<class Container> */
@@ -151,173 +138,23 @@ bool vec_contains_string_that_starts_with(
       needle.begin(), std::next(needle.begin(), size));
 }
 
-}
+} // namespace
 
 namespace wordsearch_solver
 {
 
-class StringIndex
+std::string indexes_to_word(const Grid& grid, const Indexes& tail)
 {
-public:
-  StringIndex(const Grid& grid, std::string string,
-              Indexes indexes)
-    : string_(std::move(string)), indexes_(std::move(indexes))
+  std::string word;
+  word.reserve(tail.size());
+  spdlog::debug("Grid: {}", grid);
+  for (const auto [i, j]: tail)
   {
-    JR_ASSERT(string_.size() == indexes_.size());
-    JR_ASSERT(string_ == indexes_to_word(grid, indexes_));
+    spdlog::debug("Index [{}, {}]", i, j);
+    word.push_back(grid->at(i).at(j));
   }
-
-  std::size_t size() const
-  {
-    return string_.size();
-  }
-
-  const std::string& string() const
-  {
-    return string_;
-  }
-
-  // This feels and is used in a leaky implementation detail kinda way.
-  // But the "proper" way I suspect is making iterators and bla bla and seems
-  // a lot of boilerplate to accomplish the same thing and is unneeded here.
-  const Indexes& indexes() const
-  {
-    return indexes_;
-  }
-
-private:
-  std::string string_;
-  Indexes indexes_;
-
-  // TODO: rest of these ops/mixin for them if can get it to work
-  friend bool operator<(const StringIndex& si1, const StringIndex& si2);
-  friend bool operator==(const StringIndex& si1, const StringIndex& si2);
-  friend bool operator!=(const StringIndex& si1, const StringIndex& si2);
-};
-
-
-// Need to think of simplest way with checks to turn a stringindex into a printed grid
-// And then find out how to do the InequalityMixin thing
-// And think of nice way to expose this as an interface
-// Don't overcomplicate it!
-// TODO: move delim default value to header file
-
-std::string stringindex_to_grid_string(
-    const Grid& gridp,
-    const StringIndex& si,
-    const std::string_view spacer_delim = " ")
-{
-  const auto& grid = *gridp;
-  const auto newline = "\n";
-  std::string s;
-
-  using std::begin;
-  using std::end;
-  /* More generic, less readable?.. */
-  for (auto i_it = begin(grid); i_it != end(grid); std::advance(i_it, 1))
-  {
-    bool prepend_delim = false;
-    for (auto j_it = begin(*i_it); j_it != end(*i_it); std::advance(j_it, 1))
-    {
-      if (prepend_delim)
-        s.append(spacer_delim);
-      prepend_delim = true;
-      const auto i = static_cast<std::size_t>(std::distance(begin(grid), i_it));
-      const auto j = static_cast<std::size_t>(std::distance(begin(*i_it), j_it));
-
-      // If the index is in the word found, draw the letter in the grid by
-      // it back onto s. Otherwise push an empty space.
-      if (std::find(si.indexes().begin(), si.indexes().end(), Index{i, j})
-          != si.indexes().end())
-      {
-        s.push_back(grid.at(i).at(j));
-      } else
-      {
-        s.push_back(' ');
-      }
-    }
-    s.append(newline);
-  }
-  return s;
+  return word;
 }
-
-// Sort by length (descending, longest first) then lexicographic)
-bool operator<(const StringIndex& si1, const StringIndex& si2)
-{
-  if (si1.string_.size () != si2.string_.size())
-    return si1.string_.size() > si2.string_.size();
-  return si1.string_ < si2.string_;
-}
-
-bool operator==(const StringIndex& si1, const StringIndex& si2)
-{
-  return std::tie(si1.string_, si1.indexes_) ==
-      std::tie(si2.string_, si2.indexes_);
-}
-
-bool operator!=(const StringIndex& si1, const StringIndex& si2)
-{
-  return !(si1 == si2);
-}
-
-// Possible TODO: rewrite with iterators, see if neater
-class StringIndexes
-{
-public:
-
-  // Have again chosen not to use perfect forwarding here for better error
-  // message
-  void insert(StringIndex si)
-  {
-    // Unsure of evaluation order guarantees here (with or without c++17 changes).
-    // https://en.cppreference.com/w/cpp/language/eval_order - Rules - point 15
-    // means I think this would be unspecified so we need an additional line
-
-    // Insert in sorted position if not already there
-    const auto pos = std::lower_bound(
-          stringindexes_.begin(), stringindexes_.end(), si);
-    if (pos == stringindexes_.end() || *pos != si)
-      stringindexes_.insert(pos, std::move(si));
-  }
-
-  std::vector<std::string> words() const
-  {
-    std::vector<std::string> words;
-    words.reserve(stringindexes_.size());
-    for (const auto& p: stringindexes_)
-      words.emplace_back(p.string());
-    return words;
-  }
-
-  // Solution for now to remove words from this
-  template<class Pred>
-  void filter(Pred&& pred)
-  {
-    stringindexes_.erase(
-          std::remove_if(stringindexes_.begin(), stringindexes_.end(), pred)
-          , stringindexes_.end());
-  }
-
-  // Returns vector of pairs, where first is the word, and second the grid
-  // (multi line)
-  std::vector<std::pair<std::string, std::string>> to_grid_strings() const
-  {
-    std::vector<std::pair<std::string, std::string>> string_index_printable;
-    for (const auto& si: stringindexes_)
-    {
-      string_index_printable.push_back(
-      {si.string(), stringindex_to_grid_string(grid_, si)});
-    }
-    return string_index_printable;
-  }
-
-  StringIndexes(Grid grid) : grid_(std::move(grid))
-  {}
-
-private:
-  Grid grid_;
-  std::vector<StringIndex> stringindexes_;
-};
 
 /* Several points - for the find_words major loop we don't need to start at
  * dictionary.begin() every time if remembered where we were in dictionary - or
@@ -326,8 +163,9 @@ private:
 /* For back of the search let's just try a simple index on the next letter as
  * the end point. Then should go and see what the usual distances are. */
 
-std::pair<std::vector<std::string>, std::vector<std::vector<Index>>>
-find_words(const Dictionary& dictionary, const Grid& grid, const Index start)
+//std::pair<std::vector<std::string>, std::vector<std::vector<Index>>>
+StringIndexes find_words(
+    const Dictionary& dictionary, const Grid& grid, const Index start)
 {
   std::vector<std::string> found_words{};
   std::vector<std::vector<Index>> found_indexes{};
@@ -365,8 +203,9 @@ find_words(const Dictionary& dictionary, const Grid& grid, const Index start)
     /* if (test_contains(dictionary, tail_word)) */
     {
       spdlog::debug("Outputting: {}", tail_word);
-      found_words.push_back(tail_word);
-      found_indexes.push_back(tail_indexes);
+//      found_words.push_back(tail_word);
+//			found_indexes.push_back(tail_indexes);
+      stringindexes.insert({grid, tail_word, tail_indexes});
       JR_ASSERT(tail_word.size() == tail_indexes.size());
     }
 
@@ -454,7 +293,8 @@ find_words(const Dictionary& dictionary, const Grid& grid, const Index start)
     }
   }
 
-  return {found_words, found_indexes};
+//  return {found_words, found_indexes};
+  return stringindexes;
 }
 
 Grid grid_from_file(const std::filesystem::path& wordsearch_file)
@@ -518,14 +358,16 @@ std::vector<std::string> readlines(const std::filesystem::path& p)
 }
 
 /* To get just the list of words flatten the .first returned vector  */
-std::pair<
-  std::vector<std::vector<std::string>>,
-  std::vector<std::vector<std::vector<Index>>>
->
-solve_words_indexes(const Dictionary& dict, const Grid& grid)
+//std::pair<
+//  std::vector<std::vector<std::string>>,
+//  std::vector<std::vector<std::vector<Index>>>
+//>
+StringIndexes solve(const Dictionary& dict, const Grid& grid)
 {
   std::vector<std::vector<std::string>> words_found;
   std::vector<std::vector<std::vector<Index>>> list_of_indexes_found;
+
+  StringIndexes stringindexes{grid};
 
   /* More generic, less readable?.. */
   using std::begin;
@@ -534,31 +376,16 @@ solve_words_indexes(const Dictionary& dict, const Grid& grid)
   {
     for (auto j_it = begin(*i_it); j_it != end(*i_it); std::advance(j_it, 1))
     {
-      auto [words, indexes] = find_words(dict, grid, Index{
+      stringindexes.concat(find_words(dict, grid, Index{
           std::distance(begin(*grid), i_it),
           std::distance(begin(*i_it), j_it),
-          });
-      words_found.push_back(std::move(words));
-      list_of_indexes_found.push_back(std::move(indexes));
+          }));
+//      words_found.push_back(std::move(words));
+//      list_of_indexes_found.push_back(std::move(indexes));
     }
   }
-  return {words_found, list_of_indexes_found};
-}
-
-std::vector<std::string> solve(
-    const Dictionary& dict, const Grid& grid)
-{
-  /* list_of_words - std::vector<std::vector<std::string>> */
-  auto [list_of_words, _] = solve_words_indexes(dict, grid);
-  std::vector<std::string> words_output;
-  for (auto& words: list_of_words)
-  {
-    words_output.insert(words_output.end(),
-        std::make_move_iterator(words.begin()),
-        std::make_move_iterator(words.end()));
-  }
-  sort_unique(words_output);
-  return words_output;
+//  return {words_found, list_of_indexes_found};
+  return stringindexes;
 }
 
 //sortable

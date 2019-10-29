@@ -1,3 +1,6 @@
+#ifndef JR_ASSERT_H
+#define JR_ASSERT_H
+
 #include <spdlog/spdlog.h>  // Must precede fmt include else linker errors
 #include <fmt/format.h>
 #include <cstdlib>
@@ -119,3 +122,4 @@ void assert_after_func(const char* file, const int line, const char* func,
  *
  */
 
+#endif

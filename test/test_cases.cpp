@@ -14,6 +14,7 @@ TEST_CASE( "Test indexes line up", "[indexes]")
   using namespace wordsearch_solver;
   namespace fs = std::filesystem;
 
+  // const fs::path test_cases_path("test_cases");
   const fs::path test_cases_path("test_cases");
   REQUIRE(fs::exists(test_cases_path));
 
@@ -32,15 +33,22 @@ TEST_CASE( "Test indexes line up", "[indexes]")
     }
     const auto wordsearch = grid_from_file(test_dir / "wordsearch.txt");
     auto answers = readlines(test_dir / "answers.txt");
+    for (const auto& answer: answers)
+    {
+      // Waiting for utf8 heaven one day...
+      for (const auto c: answer)
+      {
+        REQUIRE(std::islower(c));
+      }
+    }
 
     INFO("File name is " << test_dir);
     REQUIRE(default_dictionary.has_value());
     // REQUIRE(
         // (default_dictionary || fs::exists(test_dir / dictionary_name)));
-    auto words = solve(*default_dictionary, wordsearch);
-    CAPTURE(words);
-    sort_unique(words);
-    sort_unique(answers);
+    auto words = solve(default_dictionary.value(), wordsearch).words();
+    std::sort(words.begin(), words.end());
+//    CAPTURE(words);
     REQUIRE(std::includes(words.begin(), words.end(), answers.begin(),
           answers.end()));
   }

@@ -8,7 +8,7 @@ cmake_minimum_required(VERSION 3.14)
 project(wordsearch_solver)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-# set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(CMAKE_CXX_STANDARD 17)
 # Prevent madness
@@ -23,7 +23,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 find_package(fmt REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(Catch2 REQUIRED)
-# find_package(Boost 1.70.0 REQUIRED) # COMPONENTS container)
+find_package(Boost 1.70.0 REQUIRED) # COMPONENTS container)
 
 add_subdirectory(jr_assert)
 
@@ -59,19 +59,40 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 ${COMPILER_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -fno-omit-frame-pointer -march=native ${COMPILER_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3 -march=native ${COMPILER_FLAGS}")
 
-set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-fsanitize=address,undefined")
-set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-fsanitize=address,undefined")
+#set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-fsanitize=address,undefined")
+# set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-fuse-ld=gold -fsanitize=address,undefined")
+#set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-fsanitize=address,undefined -fuse-ld=lld")
+#set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-fuse-ld=lld")
 
+#set(CMAKE_EXE_LINKER_FLAGS
+#  "-fuse-ld=lld -fsanitize=address,undefined ${CMAKE_EXE_LINKER_FLAGS}"
+#  )
 
+# add_library(${PROJECT_NAME} src/wordsearch_solver.cpp include/wordsearch_solver.h)
+add_library(${PROJECT_NAME}
+  src/stringindexes.cpp
+  src/wordsearch_solver.cpp
+  include/wordsearch_solver.h
+  include/stringindexes.h
+  include/wordsearch_solver_defs.h
+  )
 
-#add_library(${PROJECT_NAME} src/wordsearch_solver.cpp include/wordsearch_solver.h)
-add_library(${PROJECT_NAME} src/wordsearch_solver.cpp)
+# Using this to set files for IDE
+# If just add headers using add_library qtcreator complains about ambiguous
+# parse something. Although now it isn't?
+#set_target_properties(${PROJECT_NAME}
+#  PROPERTIES
+#  PUBLIC_HEADER "include/wordsearch_solver.h include/stringindexes.h"
+#  )
 # Needs to be here so that projects using this lib get these flags in their link flags
 target_compile_options(${PROJECT_NAME}
-    PRIVATE "-Werror=shadow")
+    PRIVATE "-Werror=shadow" "-Weffc++")
 target_link_libraries(${PROJECT_NAME}
-	PRIVATE jr_assert::jr_assert
-	INTERFACE fmt::fmt spdlog::spdlog -lstdc++fs)
+    PRIVATE jr_assert::jr_assert
+    INTERFACE -lstdc++fs fmt::fmt spdlog::spdlog
+  )
+#target_link_options(${PROJECT_NAME} BEFORE
+#  PRIVATE "-fsanitize=address,undefined")
 add_library(wordsearch_solver::wordsearch_solver ALIAS ${PROJECT_NAME})
 
 message("in word_trie_lib PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR}")
@@ -88,10 +109,29 @@ add_executable(${PROJECT_NAME}_main src/main.cpp)
 
 #target_compile_options(${PROJECT_NAME}_main
 #    PRIVATE "-Werror=shadow")
-target_link_libraries(${PROJECT_NAME}_main wordsearch_solver::wordsearch_solver
-    fmt::fmt spdlog::spdlog BFG::Lyra jr_assert::jr_assert)
+add_library(profiler INTERFACE IMPORTED GLOBAL)
+# target_link_options(profiler BEFORE INTERFACE "-Wl,--no-as-needed" "/usr/local/lib/libprofiler.so")
+target_link_options(profiler BEFORE INTERFACE "LINKER:--no-as-needed,/usr/local/lib/libprofiler.so")
+# Don't believe necessary, more for consistency
+add_library(profiler::profiler ALIAS profiler)
 
-# add_subdirectory(jr_assert)
+#add_library(profiler SHARED IMPORTED GLOBAL)
+#set_target_properties(profiler PROPERTIES IMPORTED_LOCATION /usr/local/lib/libprofiler.so)
+## Not necesaary but nice for consistency
+#add_library(profiler::profiler ALIAS profiler)
+
+target_link_libraries(${PROJECT_NAME}_main
+  wordsearch_solver::wordsearch_solver
+  BFG::Lyra jr_assert::jr_assert
+  fmt::fmt
+  spdlog::spdlog
+  profiler::profiler
+  )
+
+#if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+#  target_link_options(${PROJECT_NAME}_main BEFORE
+#    PRIVATE "-fsanitize=address,undefined")
+#endif()
 
 enable_testing()
 add_subdirectory(test)
