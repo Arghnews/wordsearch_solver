@@ -4,6 +4,8 @@
 #include <cstddef>
 #include <filesystem>
 #include <iostream>
+#include <map>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -53,6 +55,99 @@ auto diff(const Duration& from, const Duration& to)
 {
   return std::chrono::duration_cast<ToDuration>(to - from);
 //  return std::chrono::duration<double, Ratio>(to - from);
+}
+
+struct FromTo
+{
+  using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
+  TimePoint from;
+  std::optional<TimePoint> to = std::nullopt;
+};
+
+// TODO:
+// cleaner optional
+// polymorphic Times storage for different std::ratio ie. std::chrono::millis
+// 	etc. find out how
+struct Timekeeper
+{
+
+  void start(std::string name)
+  {
+    JR_ASSERT(!current_timed_name_, "Currently may only time one "
+              "thing at once, cannot start timing {} while timing {}",
+              name, *current_timed_name_);
+    JR_ASSERT(name_indexes_.find(name) == name_indexes_.end(),
+             "May not have duplicate key {} in Timekeeper", name);
+
+    if (!insertion_order_.empty())
+    {
+      longest_name_ = std::max(name.size(), insertion_order_.back()->first.size());
+    } else
+    {
+      longest_name_ = name.size();
+    }
+    current_timed_name_ = name;
+    const auto [it, _] = name_indexes_.emplace(std::move(name), FromTo{now()});
+    insertion_order_.push_back(it);
+  }
+
+  void stop()
+  {
+    JR_ASSERT(current_timed_name_, "Cannot call stop while not timing");
+    name_indexes_.at(*current_timed_name_).to = now();
+    current_timed_name_ = std::nullopt;
+  }
+
+  // Can do without the optional but messier
+  // std::map iterators valid even after inserts
+  // https://stackoverflow.com/questions/6438086/iterator-invalidation-rules
+
+  using KeyTimeMap = std::map<std::string, FromTo>;
+  KeyTimeMap name_indexes_;
+  std::optional<std::string> current_timed_name_;
+  std::vector<KeyTimeMap::const_iterator> insertion_order_;
+  std::size_t longest_name_;
+
+  Timekeeper() = default;
+  ~Timekeeper()
+  {
+    JR_ASSERT(!current_timed_name_, "Timekeeper destroyed while still "
+                                    "timing {}", *current_timed_name_);
+    for (const auto& [name, fromto]: name_indexes_)
+    {
+      JR_ASSERT(fromto.to, "Never stopped timing {}", name);
+      // TODO: change to warning
+      JR_ASSERT(fromto.to >= fromto.from, "Recorded negative amount of time. "
+                "Careful with benchmark results for {}", name);
+    }
+  }
+
+  std::string summary() const
+  {
+    std::string out;
+//    fmt::format_to(format_string, "{{{}}}: {{}}\n", longest_name_);
+    std::chrono::duration<double> total;
+    const auto format_string = fmt::format("{{:<{}}}: {{}}\n", longest_name_);
+    for (const auto it: insertion_order_)
+    {
+      const auto& [name, fromto] = *it;
+      JR_ASSERT(fromto.to, "Never stopped timing {}", name);
+      total += (*fromto.to - fromto.from);
+      auto d = std::chrono::duration_cast<std::chrono::milliseconds>
+          (*fromto.to - fromto.from);
+      fmt::format_to(std::back_inserter(out), format_string, name, d);
+    }
+    fmt::format_to(std::back_inserter(out), format_string, "Total (ms)",
+          std::chrono::duration_cast<std::chrono::milliseconds>(total));
+    fmt::format_to(std::back_inserter(out), format_string, "Total (s)", total);
+    return out;
+  }
+};
+
+Timekeeper& timer()
+{
+  static Timekeeper timekeeper;
+  return timekeeper;
 }
 
 int main(int argc, char** argv)
@@ -110,28 +205,36 @@ int main(int argc, char** argv)
   JR_ASSERT(std::filesystem::exists(args.wordsearch_path),
       "Wordsearch file does not seem to exist at {}", args.wordsearch_path);
 
-  std::vector<std::string> timings;
-  auto add_timing = [&timings] (auto&&... args)
-  {
-    timings.push_back(fmt::format(args...));
-  };
+//  std::vector<std::string> timings;
+//  auto add_timing = [&timings] (auto&&... args)
+//  {
+//    timings.push_back(fmt::format(args...));
+//  };
 
-  auto t1 = now();
+  timer().start("Read inputs");
   const auto dict = wordsearch_solver::readlines(args.dictionary_path);
   const auto wordsearch = wordsearch_solver::grid_from_file(
       args.wordsearch_path);
-  add_timing("Read inputs {}\n", diff<std::chrono::milliseconds>(t1, now()));
+  timer().stop();
 
+  timer().start("Solve");
+  auto a1 = wordsearch_solver::solve(dict, wordsearch);
+  timer().stop();
 
-  t1 = now();
-  const auto a1 = wordsearch_solver::solve(dict, wordsearch);
+  timer().start("Sort");
+  a1.sort();
+  timer().stop();
+
+  timer().start("Unique");
+  a1.unique();
+  timer().stop();
+
   auto answers = a1.words();
-  add_timing("Solve {}\n", diff<std::chrono::milliseconds>(t1, now()));
 
-  t1 = now();
+  timer().start("Uniqify words only/assert sorted");
   std::unique(answers.begin(), answers.end());
   JR_ASSERT(std::is_sorted(a1.begin(), a1.end()));
-  add_timing("Uniqify/assert sorted {}\n", diff<std::chrono::milliseconds>(t1, now()));
+  timer().stop();
 
   if (args.min_word_len)
   {
@@ -142,15 +245,15 @@ int main(int argc, char** argv)
         }), answers.end());
   }
 
-  t1 = now();
+  timer().start("Print answers");
   for (const auto& a: answers)
   {
     fmt::print("a: {}\n", a);
   }
   fmt::print("Answers size: {} {}\n", answers.size(),
              fmt::join(answers.begin(), answers.end(), "\n"));
-  add_timing("Print answers {}\n", diff<std::chrono::milliseconds>(t1, now()));
+  timer().stop();
 
-  fmt::print("{}\n", fmt::join(timings.begin(), timings.end(), ""));
+  fmt::print("{}\n", timer().summary());
 
 }

@@ -158,11 +158,11 @@ void StringIndexes::concat(const StringIndexes& stringindexes)
             "Cannot concatenate StringIndexes from different grids");
   // stringindexes_.reserve(this->size() + stringindexes.size());
   // Iterator invalidation with vector underneath, take care
-  const auto old_size = static_cast<std::ptrdiff_t>(this->size());
+//  const auto old_size = static_cast<std::ptrdiff_t>(this->size());
   insertion_f(stringindexes_, stringindexes);
 //  stringindexes_.insert(stringindexes_.end(), stringindexes.begin(),
 //                        stringindexes.end());
-  merger_f(this->begin(), std::next(this->begin(), old_size), this->end());
+//  merger_f(this->begin(), std::next(this->begin(), old_size), this->end());
 //  std::inplace_merge(this->begin(),
 //                     std::next(this->begin(), old_size),
 //                     this->end());
@@ -172,6 +172,16 @@ void StringIndexes::concat(const StringIndexes& stringindexes)
   //  {
   //    this->insert(si);
   //  }
+}
+
+void StringIndexes::sort()
+{
+  std::sort(stringindexes_.begin(), stringindexes_.end());
+}
+
+void StringIndexes::unique()
+{
+  std::unique(stringindexes_.begin(), stringindexes_.end());
 }
 
 std::vector<std::string> StringIndexes::words() const

@@ -138,6 +138,12 @@ bool vec_contains_string_that_starts_with(
       needle.begin(), std::next(needle.begin(), size));
 }
 
+// Here for clear profiling output
+__attribute__((__noinline__)) auto lower_bound(const Dictionary& dictionary, const std::string& tail_word)
+{
+  return std::lower_bound(dictionary.begin(), dictionary.end(), tail_word);
+}
+
 } // namespace
 
 namespace wordsearch_solver
@@ -164,7 +170,7 @@ std::string indexes_to_word(const Grid& grid, const Indexes& tail)
  * the end point. Then should go and see what the usual distances are. */
 
 //std::pair<std::vector<std::string>, std::vector<std::vector<Index>>>
-StringIndexes find_words(
+__attribute__((__noinline__)) StringIndexes find_words(
     const Dictionary& dictionary, const Grid& grid, const Index start)
 {
   std::vector<std::string> found_words{};
@@ -197,8 +203,7 @@ StringIndexes find_words(
     spdlog::debug("Tail is {}", tail_word);
     spdlog::debug("At position {} {}", last, index_to_char(last));
 
-    const auto tail_word_it = std::lower_bound(
-        dictionary.begin(), dictionary.end(), tail_word);
+    const auto tail_word_it = lower_bound(dictionary, tail_word);
     if (tail_word_it != dictionary.end() && !(tail_word < *tail_word_it))
     /* if (test_contains(dictionary, tail_word)) */
     {

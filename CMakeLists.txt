@@ -54,9 +54,10 @@ string(CONCAT COMPILER_FLAGS "-Wall -Wextra -pedantic -Wfloat-equal "
     "-Wwrite-strings -Wswitch-enum -Wunreachable-code -Wconversion "
     "-Wcast-qual -Wstrict-overflow=5 -Werror=uninitialized "
     "-Werror=return-type -pipe")
+#  -fno-inline-functions
 
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 ${COMPILER_FLAGS}")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -fno-omit-frame-pointer -march=native ${COMPILER_FLAGS}")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fno-inline-functions ${COMPILER_FLAGS}")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O1 -fno-omit-frame-pointer -march=native -fno-inline-functions ${COMPILER_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3 -march=native ${COMPILER_FLAGS}")
 
 #set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-fsanitize=address,undefined")

@@ -134,6 +134,9 @@ public:
 
   StringIndexes(Grid grid);
 
+  void sort();
+  void unique();
+
   auto begin()
   {
     return StringIndexIterator(&*stringindexes_.begin());
