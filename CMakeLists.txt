@@ -57,8 +57,8 @@ string(CONCAT COMPILER_FLAGS "-Wall -Wextra -pedantic -Wfloat-equal "
 #  -fno-inline-functions
 
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fno-inline-functions ${COMPILER_FLAGS}")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O1 -fno-omit-frame-pointer -march=native -fno-inline-functions ${COMPILER_FLAGS}")
-set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3 -march=native ${COMPILER_FLAGS}")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -fno-omit-frame-pointer -march=native -fno-inline-functions ${COMPILER_FLAGS}")
+set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O2 -march=native ${COMPILER_FLAGS}")
 
 #set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-fsanitize=address,undefined")
 # set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-fuse-ld=gold -fsanitize=address,undefined")
@@ -71,10 +71,13 @@ set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3 -march=native ${COMPILER_FLAGS}")
 
 # add_library(${PROJECT_NAME} src/wordsearch_solver.cpp include/wordsearch_solver.h)
 add_library(${PROJECT_NAME}
+  src/dictionary.cpp
   src/stringindexes.cpp
   src/wordsearch_solver.cpp
-  include/wordsearch_solver.h
+
+  include/dictionary.h
   include/stringindexes.h
+  include/wordsearch_solver.h
   include/wordsearch_solver_defs.h
   )
 
@@ -99,8 +102,8 @@ add_library(wordsearch_solver::wordsearch_solver ALIAS ${PROJECT_NAME})
 message("in word_trie_lib PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR}")
 
 target_include_directories(${PROJECT_NAME}
-    PUBLIC ${PROJECT_SOURCE_DIR}/include
-    PRIVATE ${PROJECT_SOURCE_DIR}/src) # Internal headers?
+  PUBLIC ${PROJECT_SOURCE_DIR}/include)
+#    PRIVATE ${PROJECT_SOURCE_DIR}/src) # Internal headers?
 
 
 # Argument parser

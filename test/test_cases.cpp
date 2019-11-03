@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <filesystem>
+#include <fstream>
 #include <optional>
 #include <vector>
 
@@ -7,6 +8,24 @@
 #include "wordsearch_solver.h"
 
 using namespace std::literals;
+
+namespace
+{
+
+std::vector<std::string> readlines(const std::filesystem::path& p)
+{
+  std::vector<std::string> lines;
+  std::ifstream f{p};
+  INFO("File name is " << p);
+  REQUIRE(f.good());
+  for (std::string line; std::getline(f, line);)
+  {
+    lines.emplace_back(std::move(line));
+  }
+  return lines;
+}
+
+}
 
 TEST_CASE( "Test indexes line up", "[indexes]")
 {
@@ -23,7 +42,7 @@ TEST_CASE( "Test indexes line up", "[indexes]")
 
   // TODO: possibly implement overriding dictionary in subdirs
   const auto default_dictionary = fs::exists(default_dictionary_path)
-    ? std::optional{readlines(default_dictionary_path)} : std::nullopt;
+    ? std::optional{wordsearch_solver::Dictionary(default_dictionary_path)} : std::nullopt;
 
   for (auto& test_dir: fs::directory_iterator(test_cases_path))
   {
@@ -32,15 +51,15 @@ TEST_CASE( "Test indexes line up", "[indexes]")
       continue;
     }
     const auto wordsearch = grid_from_file(test_dir / "wordsearch.txt");
-    auto answers = readlines(test_dir / "answers.txt");
-    for (const auto& answer: answers)
-    {
+    auto answers = ::readlines(test_dir / "answers.txt");
+//    for (const auto& answer: answers)
+//    {
       // Waiting for utf8 heaven one day...
-      for (const auto c: answer)
-      {
-        REQUIRE(std::islower(c));
-      }
-    }
+//      for (const auto c: answer)
+//      {
+//        REQUIRE(std::islower(c));
+//      }
+//    }
 
     INFO("File name is " << test_dir);
     REQUIRE(default_dictionary.has_value());

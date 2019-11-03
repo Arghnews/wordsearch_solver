@@ -11,6 +11,7 @@
 
 #include "wordsearch_solver_defs.h"
 #include "stringindexes.h"
+#include "dictionary.h"
 
 namespace wordsearch_solver
 {
@@ -26,8 +27,6 @@ namespace wordsearch_solver
       Index start);
 
   Grid grid_from_file(const std::filesystem::path& wordsearch_file);
-
-  std::vector<std::string> readlines(const std::filesystem::path& p);
 
   StringIndexes solve(const Dictionary& dict, const Grid& grid);
 

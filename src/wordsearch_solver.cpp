@@ -9,6 +9,7 @@
 #include <type_traits>
 #include <tuple>
 #include <utility>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -17,6 +18,7 @@
 #include "spdlog/spdlog.h"
 #include "prettyprint.hpp"
 #include "jr_assert.h"
+#include "dictionary.h"
 
 /* std::ostream& operator<<(std::ostream& os, const wordsearch_solver::Index& i) */
 /* { */
@@ -108,41 +110,42 @@ void surrounding(const std::size_t i, const std::size_t j,
 /* Sadly from looking at a call graph it seems that the std::string_view is not
  * optimised out whereas passing needle by const& is */
 /* template<class Container> */
-template<class Iterator>
-bool vec_contains_string_that_starts_with(
-    const Iterator first,
-    const Iterator last,
-    /* const Container& haystack, */
-    const std::string& needle)
-    /* const std::string_view needle) */
-{
+//bool vec_contains_string_that_starts_with(
+//    const Dictionary& dictionary,
+//    /* const Container& haystack, */
+//    const std::string& needle)
+//    /* const std::string_view needle) */
+//{
 
-  const auto it = std::lower_bound(first, last, needle);
-  /* const auto it = std::find(first, last, needle); */
-  // Hacked for now for std::set
-  // Well this sucks
-  // Requires std::set<T, std::less<>>
-  /* const auto it = haystack.lower_bound(needle); */
-  /* const auto it = haystack.lower_bound(std::string{needle}); */
-  /* Avoids using substr on needle - needle was string_view but time being
-   * wasted calling operator string on the view for substr, this (hopefully!)
-   * avoids any extraneous string */
-  /* if (it == haystack.end()) return false; */
-  if (it == last) return false;
-  const auto& haystack_string = *it;
-  const auto size = static_cast<
-    std::decay_t<decltype(needle)>::difference_type>(
-      std::min(haystack_string.size(), needle.size()));
-  return std::equal(
-      haystack_string.begin(), std::next(haystack_string.begin(), size),
-      needle.begin(), std::next(needle.begin(), size));
-}
+////  const auto it = std::lower_bound(first, last, needle);
+//  const auto it = dictionary.lower_bound(needle);
+//  /* const auto it = std::find(first, last, needle); */
+//  // Hacked for now for std::set
+//  // Well this sucks
+//  // Requires std::set<T, std::less<>>
+//  /* const auto it = haystack.lower_bound(needle); */
+//  /* const auto it = haystack.lower_bound(std::string{needle}); */
+//  /* Avoids using substr on needle - needle was string_view but time being
+//   * wasted calling operator string on the view for substr, this (hopefully!)
+//   * avoids any extraneous string */
+//  /* if (it == haystack.end()) return false; */
+//  if (it == dictionary.end()) return false;
+//  const auto& haystack_string = *it;
+//  const auto size = static_cast<
+//    std::decay_t<decltype(needle)>::difference_type>(
+//      std::min(haystack_string.size(), needle.size()));
+//  return std::equal(
+//      haystack_string.begin(), std::next(haystack_string.begin(), size),
+//      needle.begin(), std::next(needle.begin(), size));
+//}
 
-// Here for clear profiling output
-__attribute__((__noinline__)) auto lower_bound(const Dictionary& dictionary, const std::string& tail_word)
-{
-  return std::lower_bound(dictionary.begin(), dictionary.end(), tail_word);
-}
+//// Here for clear profiling output
+//__attribute__((__noinline__)) auto lower_bound(const Dictionary& dictionary, const std::string& tail_word)
+//{
+////  return dictionary.lower_bound(tail_word);
+//  return dictionary.find(tail_word);
+////  return std::lower_bound(dictionary.begin(), dictionary.end(), tail_word);
+//}
 
 } // namespace
 
@@ -196,18 +199,19 @@ __attribute__((__noinline__)) StringIndexes find_words(
 
   while (!a.empty())
   {
-    spdlog::debug("\nIteration");
+    // spdlog::debug/("\nIteration");
     JR_ASSERT(!a.empty() && !a.back().empty());
     const auto& last = a.back().front();
 
-    spdlog::debug("Tail is {}", tail_word);
-    spdlog::debug("At position {} {}", last, index_to_char(last));
+    // spdlog::debug/("Tail is {}", tail_word);
+    // spdlog::debug/("At position {} {}", last, index_to_char(last));
 
-    const auto tail_word_it = lower_bound(dictionary, tail_word);
-    if (tail_word_it != dictionary.end() && !(tail_word < *tail_word_it))
+    const auto tail_word_opt = dictionary.find(tail_word);
+//    const auto tail_word_it = lower_bound(dictionary, tail_word);
+    if (tail_word_opt && !(tail_word < **tail_word_opt))
     /* if (test_contains(dictionary, tail_word)) */
     {
-      spdlog::debug("Outputting: {}", tail_word);
+      // spdlog::debug/("Outputting: {}", tail_word);
 //      found_words.push_back(tail_word);
 //			found_indexes.push_back(tail_indexes);
       stringindexes.insert({grid, tail_word, tail_indexes});
@@ -215,7 +219,7 @@ __attribute__((__noinline__)) StringIndexes find_words(
     }
 
     surrounding(last.first, last.second, grid, next_indexes);
-    spdlog::debug("Surrouding are {} {}", next_indexes, indexes_to_word(grid, next_indexes));
+    // spdlog::debug/("Surrouding are {} {}", next_indexes, indexes_to_word(grid, next_indexes));
 
     /* Remove surrounding indexes that would bite tail_indexes */
     next_indexes.erase(std::remove_if(next_indexes.begin(), next_indexes.end(),
@@ -224,7 +228,7 @@ __attribute__((__noinline__)) StringIndexes find_words(
           return std::find(tail_indexes.begin(),
               tail_indexes.end(), val) != tail_indexes.end();
         }), next_indexes.end());
-    spdlog::debug("Surrouding are now {}", next_indexes);
+    // spdlog::debug/("Surrouding are now {}", next_indexes);
 
     /* Remove surrounding indexes if would not ever form word */
     std::vector<Index> new_layer;
@@ -240,12 +244,12 @@ __attribute__((__noinline__)) StringIndexes find_words(
       static_assert(std::is_same_v<
           std::remove_cv_t<
           std::remove_reference_t<decltype(tail_word)>>, std::string>);
-      spdlog::debug("tail_word is {}", tail_word);
+      // spdlog::debug/("tail_word is {}", tail_word);
       /* if (!vec_contains_string_that_starts_with(dictionary, tail_word)) */
-      if (!vec_contains_string_that_starts_with(tail_word_it, dictionary.end(),
-            tail_word))
+      if (!dictionary.contains_prefix(tail_word, tail_word_opt))
+//      if (!vec_contains_string_that_starts_with(dictionary, tail_word))
       {
-        spdlog::debug("Rejecting word prefix {}", tail_word);
+        // spdlog::debug/("Rejecting word prefix {}", tail_word);
       } else
       {
         new_layer.emplace_back(i, j);
@@ -256,27 +260,27 @@ __attribute__((__noinline__)) StringIndexes find_words(
 
     if (!new_layer.empty())
     {
-      spdlog::debug("Adding new layer of letters {}", indexes_to_word(grid,
-            new_layer));
+      // spdlog::debug/("Adding new layer of letters {}", indexes_to_word(grid,
+//            new_layer));
       tail_indexes.push_back(new_layer[0]);
       tail_word.push_back(index_to_char(new_layer[0]));
       a.emplace_back(std::move(new_layer));
     } else
     {
-      spdlog::debug("Popping a.back().front() as no letters");
-      spdlog::debug("Losing {}", last);
-      spdlog::debug("a: {}", a);
+      // spdlog::debug/("Popping a.back().front() as no letters");
+      // spdlog::debug/("Losing {}", last);
+      // spdlog::debug/("a: {}", a);
       while (!a.empty() && a.back().size() <= 1)
       {
-        spdlog::debug("Popping additional size 1 {}", a.back());
+        // spdlog::debug/("Popping additional size 1 {}", a.back());
         a.pop_back();
         tail_indexes.pop_back();
         tail_word.pop_back();
       }
       if (!a.empty())
       {
-        spdlog::debug("Popping last of back {}", a.back().front());
-        spdlog::debug("tail_indexes: {} vs a: {} vs a.back(): {}", tail_indexes, a, a.back());
+        // spdlog::debug/("Popping last of back {}", a.back().front());
+        // spdlog::debug/("tail_indexes: {} vs a: {} vs a.back(): {}", tail_indexes, a, a.back());
         /* a.back().pop_front(); */
         /* Potential optim further here with faster erase that doesn't preserve
          * a nice ordering like this */
@@ -290,9 +294,9 @@ __attribute__((__noinline__)) StringIndexes find_words(
           tail_indexes.pop_back();
           tail_word.pop_back();
         }
-        spdlog::debug("after ops: tail_indexes: {} vs a: {} vs a.back(): {}", tail_indexes, a, a.back());
+        // spdlog::debug/("after ops: tail_indexes: {} vs a: {} vs a.back(): {}", tail_indexes, a, a.back());
       }
-      spdlog::debug("a: {}", a);
+      // spdlog::debug/("a: {}", a);
 
       /* assert(!tail_indexes.empty()); */
     }
@@ -345,21 +349,6 @@ Grid grid_from_file(const std::filesystem::path& wordsearch_file)
   }
 
   return grid;
-}
-
-std::vector<std::string> readlines(const std::filesystem::path& p)
-{
-  std::vector<std::string> lines;
-  std::ifstream f{p};
-  JR_ASSERT(f, "Error reading file {}", p);
-  /* I hate how primitive assert is. Note to self to find a better solution. */
-  /* assert */
-  /* spdlog::error(string_view_t fmt, const Args &args...) */
-  for (std::string line; std::getline(f, line);)
-  {
-    lines.emplace_back(std::move(line));
-  }
-  return lines;
 }
 
 /* To get just the list of words flatten the .first returned vector  */

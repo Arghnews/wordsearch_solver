@@ -212,7 +212,7 @@ int main(int argc, char** argv)
 //  };
 
   timer().start("Read inputs");
-  const auto dict = wordsearch_solver::readlines(args.dictionary_path);
+  const auto dict = wordsearch_solver::Dictionary(args.dictionary_path);
   const auto wordsearch = wordsearch_solver::grid_from_file(
       args.wordsearch_path);
   timer().stop();
