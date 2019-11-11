@@ -15,13 +15,10 @@ class Dictionary
 private:
   using Dict = std::set<std::string>;
 public:
-  using Iterator = Dict::const_iterator;
-  std::optional<const Iterator> find(const std::string& key) const;
-  bool contains_prefix(
-      const std::string& prefix,
-      std::optional<const Iterator> start_hint) const;
-  // For now just this, hacky
-  Iterator end() const;
+
+  bool contains(const std::string& key) const;
+  bool contains_prefix(const std::string& prefix) const;
+
   Dictionary(const std::filesystem::path& dictionary_path);
 private:
   Dict dictionary_;

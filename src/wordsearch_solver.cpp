@@ -206,9 +206,7 @@ __attribute__((__noinline__)) StringIndexes find_words(
     // spdlog::debug/("Tail is {}", tail_word);
     // spdlog::debug/("At position {} {}", last, index_to_char(last));
 
-    const auto tail_word_opt = dictionary.find(tail_word);
-//    const auto tail_word_it = lower_bound(dictionary, tail_word);
-    if (tail_word_opt && !(tail_word < **tail_word_opt))
+    if (dictionary.contains(tail_word))
     /* if (test_contains(dictionary, tail_word)) */
     {
       // spdlog::debug/("Outputting: {}", tail_word);
@@ -246,7 +244,7 @@ __attribute__((__noinline__)) StringIndexes find_words(
           std::remove_reference_t<decltype(tail_word)>>, std::string>);
       // spdlog::debug/("tail_word is {}", tail_word);
       /* if (!vec_contains_string_that_starts_with(dictionary, tail_word)) */
-      if (!dictionary.contains_prefix(tail_word, tail_word_opt))
+      if (!dictionary.contains_prefix(tail_word))
 //      if (!vec_contains_string_that_starts_with(dictionary, tail_word))
       {
         // spdlog::debug/("Rejecting word prefix {}", tail_word);

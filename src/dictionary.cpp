@@ -36,22 +36,19 @@ Dictionary::Dictionary(const std::filesystem::path& dictionary_path)
 {}
 
 __attribute__((__noinline__))
-std::optional<const Dictionary::Iterator>
-Dictionary::find(const std::string& key) const
+bool
+Dictionary::contains(const std::string& key) const
 {
-  const auto it = dictionary_.find(key);
-  if (it == dictionary_.end())
-    return {};
-  return it;
+  return dictionary_.find(key) != dictionary_.end();
 }
 
 __attribute__((__noinline__))
-bool Dictionary::contains_prefix(
-    const std::string& prefix,
-    [[maybe_unused]] std::optional<const Iterator> start_hint) const
+bool Dictionary::contains_prefix(const std::string& prefix) const
 {
   const auto it = dictionary_.lower_bound(prefix);
   if (it == dictionary_.end()) return false;
+
+  // Compare substrings (of whichever is shortest length) for equality
   const auto& haystack_string = *it;
   const auto size = static_cast<
     std::decay_t<decltype(prefix)>::difference_type>(
@@ -59,9 +56,4 @@ bool Dictionary::contains_prefix(
   return std::equal(
       haystack_string.begin(), std::next(haystack_string.begin(), size),
       prefix.begin(), std::next(prefix.begin(), size));
-}
-
-Dictionary::Iterator Dictionary::end() const
-{
-  return dictionary_.end();
 }
