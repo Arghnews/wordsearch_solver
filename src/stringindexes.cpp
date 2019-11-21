@@ -19,12 +19,18 @@ namespace wordsearch_solver
 //  using Index = std::pair<std::size_t, std::size_t>;
 //  using Indexes = std::vector<Index>;
 
-  StringIndex::StringIndex(const Grid& grid, std::string string,
-              Indexes indexes)
+  StringIndex::StringIndex(std::string string, Indexes indexes)
     : string_(std::move(string)), indexes_(std::move(indexes))
   {
-    // FIXME: these!
     JR_ASSERT(string_.size() == indexes_.size());
+  }
+
+  // This constructor does an extra (potentially costly) check that the string
+  // and the indexes on the grid do indeed match
+  StringIndex::StringIndex(std::string string, Indexes indexes,
+                           const Grid& grid)
+    : StringIndex(std::move(string), std::move(indexes))
+  {
     JR_ASSERT(string_ == indexes_to_word(grid, indexes_));
   }
 
@@ -110,19 +116,25 @@ bool operator!=(const StringIndex& si1, const StringIndex& si2)
   return !(si1 == si2);
 }
 
+void StringIndexes::insert(const StringIndex& si)
+{
+  stringindexes_.push_back(si);
+}
+
 // Have again chosen not to use perfect forwarding here for better error
 // message
-void StringIndexes::insert(StringIndex si)
+void StringIndexes::insert(StringIndex&& si)
 {
+  stringindexes_.push_back(std::move(si));
   // Unsure of evaluation order guarantees here (with or without c++17 changes).
   // https://en.cppreference.com/w/cpp/language/eval_order - Rules - point 15
   // means I think this would be unspecified so we need an additional line
 
   // Insert in sorted position if not already there
-  const auto pos = std::lower_bound(
-        stringindexes_.begin(), stringindexes_.end(), si);
-  if (pos == stringindexes_.end() || *pos != si)
-    stringindexes_.insert(pos, std::move(si));
+//  const auto pos = std::lower_bound(
+//        stringindexes_.begin(), stringindexes_.end(), si);
+//  if (pos == stringindexes_.end() || *pos != si)
+//    stringindexes_.insert(pos, std::move(si));
   // Pairwise iteration for assert, not finding anything
 //  std::adjacent_find(this->begin(), this->end(),
 //                     [] (const auto& i1, const auto& i2)
@@ -181,7 +193,8 @@ void StringIndexes::sort()
 
 void StringIndexes::unique()
 {
-  std::unique(stringindexes_.begin(), stringindexes_.end());
+  stringindexes_.erase(std::unique(
+        stringindexes_.begin(), stringindexes_.end()), stringindexes_.end());
 }
 
 std::vector<std::string> StringIndexes::words() const

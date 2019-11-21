@@ -21,10 +21,11 @@ namespace wordsearch_solver
 //  using Indexes = std::vector<Index>;
 
 //  std::pair<std::vector<std::string>, std::vector<std::vector<Index>>>
-  StringIndexes
+//  StringIndexes
+  void
   find_words(
       const Dictionary& dictionary, const Grid& grid,
-      Index start);
+      Index start, StringIndexes& stringindexes);
 
   Grid grid_from_file(const std::filesystem::path& wordsearch_file);
 

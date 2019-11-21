@@ -8,7 +8,7 @@ cmake_minimum_required(VERSION 3.14)
 project(wordsearch_solver)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_VERBOSE_MAKEFILE ON)
+# set(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(CMAKE_CXX_STANDARD 17)
 # Prevent madness
@@ -21,11 +21,13 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # find_package(fmt CONFIG REQUIRED)
 find_package(fmt REQUIRED)
-find_package(spdlog REQUIRED)
+# find_package(spdlog REQUIRED)
 find_package(Catch2 REQUIRED)
 find_package(Boost 1.70.0 REQUIRED) # COMPONENTS container)
 
 add_subdirectory(jr_assert)
+
+add_subdirectory(trie)
 
 # https://blog.kitware.com/cmake-and-the-default-build-type/
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -60,9 +62,11 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fno-inline-functions ${COMPILER_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -fno-omit-frame-pointer -march=native -fno-inline-functions ${COMPILER_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O2 -march=native ${COMPILER_FLAGS}")
 
-#set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-fsanitize=address,undefined")
-# set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-fuse-ld=gold -fsanitize=address,undefined")
-#set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-fsanitize=address,undefined -fuse-ld=lld")
+# set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-fsanitize=address,undefined")
+# set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-fsanitize=address,undefined")
+# set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-fsanitize=memory -fsanitize-memory-track-origins")
+# set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-fsanitize=address,undefined -fsanitize=memory -fsanitize-memory-track-origins")
+# set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-fsanitize=address,undefined -fuse-ld=lld")
 #set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-fuse-ld=lld")
 
 #set(CMAKE_EXE_LINKER_FLAGS
@@ -74,11 +78,13 @@ add_library(${PROJECT_NAME}
   src/dictionary.cpp
   src/stringindexes.cpp
   src/wordsearch_solver.cpp
+  src/dictionary_std_set.cpp
 
   include/dictionary.h
   include/stringindexes.h
   include/wordsearch_solver.h
   include/wordsearch_solver_defs.h
+  include/dictionary_std_set.h
   )
 
 # Using this to set files for IDE
@@ -90,10 +96,12 @@ add_library(${PROJECT_NAME}
 #  )
 # Needs to be here so that projects using this lib get these flags in their link flags
 target_compile_options(${PROJECT_NAME}
-    PRIVATE "-Werror=shadow" "-Weffc++")
+    PRIVATE "-Werror=shadow")
+# -Weffc++ gives a fair amount of dumb noise errors so disabled
+    # PRIVATE "-Werror=shadow" "-Weffc++")
 target_link_libraries(${PROJECT_NAME}
     PRIVATE jr_assert::jr_assert
-    INTERFACE -lstdc++fs fmt::fmt spdlog::spdlog
+    PUBLIC -lstdc++fs trie::trie fmt::fmt
   )
 #target_link_options(${PROJECT_NAME} BEFORE
 #  PRIVATE "-fsanitize=address,undefined")
@@ -125,11 +133,11 @@ add_library(profiler::profiler ALIAS profiler)
 #add_library(profiler::profiler ALIAS profiler)
 
 target_link_libraries(${PROJECT_NAME}_main
-  wordsearch_solver::wordsearch_solver
-  BFG::Lyra jr_assert::jr_assert
-  fmt::fmt
-  spdlog::spdlog
   profiler::profiler
+  wordsearch_solver::wordsearch_solver
+  BFG::Lyra
+  jr_assert::jr_assert
+  fmt::fmt
   )
 
 #if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -139,7 +147,6 @@ target_link_libraries(${PROJECT_NAME}_main
 
 enable_testing()
 add_subdirectory(test)
-
 
 # message("
 #     copy ${CMAKE_BINARY_DIR}/compile_commands.json ${PROJECT_SOURCE_DIR}")

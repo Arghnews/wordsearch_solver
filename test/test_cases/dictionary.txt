@@ -20329,7 +20329,6 @@ compartmentalised
 compartmentalises
 compartmentalising
 compartmentalization
-compartmentalization
 compartmentalize
 compartmentalized
 compartmentalizes
@@ -21971,7 +21970,6 @@ contradistinguish
 contradistinguished
 contradistinguishes
 contradistinguishing
-contradistinguishing
 contraflow
 contraflows
 contrail
@@ -22136,7 +22134,6 @@ conventionalisms
 conventionalist
 conventionality
 conventionalization
-conventionalizations
 conventionalizations
 conventionalize
 conventionalized
@@ -23230,7 +23227,6 @@ counterpunches
 counterreply
 counterrevolution
 counterrevolutionaries
-counterrevolutionary
 counterrevolutionary
 counterrevolutions
 counters
@@ -33319,7 +33315,6 @@ electrocardiogram
 electrocardiograms
 electrocardiograph
 electrocardiographic
-electrocardiographic
 electrocardiographs
 electrocardiography
 electrocautery
@@ -33342,7 +33337,6 @@ electrodynamic
 electrodynamics
 electrodynamometer
 electrodynamometers
-electroencephalogram
 electroencephalogram
 electroencephalograms
 electroencephalograph

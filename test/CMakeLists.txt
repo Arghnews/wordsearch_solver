@@ -5,8 +5,11 @@ find_package(Catch2 REQUIRED)
 
 # add_library(word_trie_lib SHARED word_trie_lib.h)
 
-add_executable(the_test test_catch_main.cpp test_cases.cpp)
-target_link_libraries(the_test Catch2::Catch2 wordsearch_solver::wordsearch_solver)
+add_executable(the_test test_cases.cpp test_catch_main.cpp)
+# add_executable(the_test test_catch_main.cpp)
+target_link_libraries(the_test
+  wordsearch_solver::wordsearch_solver
+  Catch2::Catch2)
 
 message("CMAKE_CURRENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}")
 message("CMAKE_CURRENT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}")

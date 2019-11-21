@@ -23,8 +23,9 @@ namespace wordsearch_solver
 class StringIndex
 {
 public:
-  StringIndex(const Grid& grid, std::string string,
-              Indexes indexes);
+  StringIndex(std::string string, Indexes indexes);
+  StringIndex(std::string string,
+              Indexes indexes, const Grid& grid);
   std::size_t size() const;
   const std::string& string() const;
   const Indexes& indexes() const;
@@ -105,7 +106,8 @@ public:
 
   // Have again chosen not to use perfect forwarding here for better error
   // message
-  void insert(StringIndex si);
+  void insert(const StringIndex& si);
+  void insert(StringIndex&& si);
 
   // TODO: unsure on this as the way to do it?
   void concat(const StringIndexes& stringindexes);

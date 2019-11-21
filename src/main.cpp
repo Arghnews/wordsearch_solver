@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <filesystem>
 #include <iostream>
+#include <fstream>
 #include <map>
 #include <memory>
 #include <optional>
@@ -20,25 +21,28 @@
 #include <spdlog/common.h>
 #include "jr_assert.h"
 
-
 using namespace std::literals;
 
 #include "lyra/lyra.hpp"
 #include "wordsearch_solver.h"
+#include "dictionary.h"
 
-template <>
-struct fmt::formatter<wordsearch_solver::StringIndex>
-{
-  template <typename ParseContext>
-  constexpr auto parse(ParseContext &ctx) { return ctx.begin(); }
+#include "dictionary_std_set.h"
+#include "trie.h"
 
-  template <typename FormatContext>
-  auto format(const wordsearch_solver::StringIndex &d, FormatContext &ctx)
-  {
-    return format_to(ctx.out(), "{} {}", d.string(), d.indexes());
-//    return format_to(ctx.out(), "{}", 3);
-  }
-};
+// template <>
+// struct fmt::formatter<wordsearch_solver::StringIndex>
+// {
+  // template <typename ParseContext>
+  // constexpr auto parse(ParseContext &ctx) { return ctx.begin(); }
+
+  // template <typename FormatContext>
+  // auto format(const wordsearch_solver::StringIndex &d, FormatContext &ctx)
+  // {
+    // return format_to(ctx.out(), "{} {}", d.string(), d.indexes());
+// //    return format_to(ctx.out(), "{}", 3);
+  // }
+// };
 
 auto now()
 {
@@ -124,10 +128,20 @@ struct Timekeeper
 
   std::string summary() const
   {
-    std::string out;
+    // return "hi there";
+    std::string out{};
 //    fmt::format_to(format_string, "{{{}}}: {{}}\n", longest_name_);
-    std::chrono::duration<double> total;
-    const auto format_string = fmt::format("{{:<{}}}: {{}}\n", longest_name_);
+//    https://fmt.dev/latest/syntax.html#format-examples
+//    See dynamic width
+//  Must {} and not just std::chrono::duration<double> total; else uninited
+    std::chrono::duration<double> total{};
+    // const auto format_string = fmt::format("{{:<{}}}: {{}}\n", longest_name_);
+    auto print = [&] (const auto& description, const auto& time_taken)
+    {
+      fmt::format_to(std::back_inserter(out),
+          "{:<{}} {}\n", description, longest_name_, time_taken);
+    };
+
     for (const auto it: insertion_order_)
     {
       const auto& [name, fromto] = *it;
@@ -135,11 +149,11 @@ struct Timekeeper
       total += (*fromto.to - fromto.from);
       auto d = std::chrono::duration_cast<std::chrono::milliseconds>
           (*fromto.to - fromto.from);
-      fmt::format_to(std::back_inserter(out), format_string, name, d);
+      print(name, d);
     }
-    fmt::format_to(std::back_inserter(out), format_string, "Total (ms)",
-          std::chrono::duration_cast<std::chrono::milliseconds>(total));
-    fmt::format_to(std::back_inserter(out), format_string, "Total (s)", total);
+    print("Total (ms)", std::chrono::duration_cast<std::chrono::milliseconds>(
+          total));
+    print("Total (s)", total);
     return out;
   }
 };
@@ -148,6 +162,20 @@ Timekeeper& timer()
 {
   static Timekeeper timekeeper;
   return timekeeper;
+}
+
+std::vector<std::string> readlines(const std::filesystem::path& p)
+{
+  // fmt::print("Reading from {}\n", p.string());
+  std::vector<std::string> lines{};
+  JR_ASSERT(std::filesystem::is_regular_file(p));
+  std::ifstream f{p};
+  JR_ASSERT(f.good(), "File not read correctly {}", p.u8string());
+  for (std::string line; std::getline(f, line);)
+  {
+    lines.emplace_back(std::move(line));
+  }
+  return lines;
 }
 
 int main(int argc, char** argv)
@@ -212,48 +240,95 @@ int main(int argc, char** argv)
 //  };
 
   timer().start("Read inputs");
-  const auto dict = wordsearch_solver::Dictionary(args.dictionary_path);
+//  auto dict_impl = DictionaryMap(args.dictionary_path);
+//  const wordsearch_solver::Dictionary dict{std::move(dict_impl)};
+
+//  const wordsearch_solver::Dictionary dict =
+//      DictionaryStdSet(args.dictionary_path);
+  // const auto vec = ::readlines(args.dictionary_path);
+  // const auto vec = ::readlines("/home/justin/cpp/wordsearch_solvercp/test/test_cases/dictionary.txt");
+  // FIXME
+  // TODO
+  // ATTENTION:
+  // THIS JUST SEEMS I THINK - COULD BE WRONG - TO BE A FALSE POSITIVE WITH
+  // LLVM'S SANITIZE MEMORY. TODO:
+  // Try using libc++ rather than libstdc++
+  // Ignore this?
+  // ->>Minimal example<<-
+  const auto vec = ::readlines(args.dictionary_path);
+  // std::vector<std::string> vec
+  // {
+    // "a",
+    // "aa",
+    // "aah",
+    // "aalii",
+    // "aardvark",
+    // "aardvarks",
+    // "aardwolf",
+    // "aardwolves",
+    // "ab",
+    // "aba",
+  // };
+
+  // const std::vector<std::string> grid_inline = {"aahab"};
+  // const wordsearch_solver::Grid grid = std::make_shared<std::vector<std::string>>
+    // (grid_inline);
+
+  // const auto dict = Trie(vec);
+  // const auto dict = Trie(readlines(args.dictionary_path));
+  fmt::print("Next line builds dict\n");
+  const wordsearch_solver::Dictionary dict = Trie(vec);
+  // const wordsearch_solver::Dictionary dict = DictionaryStdSet(vec);
+  // fmt::print("{}\n", dict);
+  fmt::print("Prev line builds dict\n");
+  // const auto dict = Trie(s);
   const auto wordsearch = wordsearch_solver::grid_from_file(
       args.wordsearch_path);
+  // const auto wordsearch = grid;
   timer().stop();
 
   timer().start("Solve");
-  auto a1 = wordsearch_solver::solve(dict, wordsearch);
+  const auto a = wordsearch_solver::solve(dict, wordsearch);
+  auto a1 = a.words();
   timer().stop();
 
   timer().start("Sort");
-  a1.sort();
+  std::sort(a1.begin(), a1.end());
+  // a1.sort();
   timer().stop();
 
   timer().start("Unique");
-  a1.unique();
+  a1.erase(std::unique(a1.begin(), a1.end()), a1.end());
+  // a1.unique();
   timer().stop();
 
-  auto answers = a1.words();
+  auto answers = a1;
 
-  timer().start("Uniqify words only/assert sorted");
-  std::unique(answers.begin(), answers.end());
+  timer().start("Assert sorted");
   JR_ASSERT(std::is_sorted(a1.begin(), a1.end()));
   timer().stop();
 
-  if (args.min_word_len)
-  {
-    answers.erase(std::remove_if(answers.begin(), answers.end(),
-        [&min_word_len = *args.min_word_len] (const auto& word)
-        {
-          return word.size() < min_word_len;
-        }), answers.end());
-  }
+  // if (args.min_word_len)
+  // {
+    // answers.erase(std::remove_if(answers.begin(), answers.end(),
+        // [&min_word_len = *args.min_word_len] (const auto& word)
+        // {
+          // return word.size() < min_word_len;
+        // }), answers.end());
+  // }
 
   timer().start("Print answers");
-  for (const auto& a: answers)
+  // for (const auto& a: answers)
   {
-    fmt::print("a: {}\n", a);
+    // std::cout << a << "\n";
+    // fmt::print("a: {}\n", a);
   }
-  fmt::print("Answers size: {} {}\n", answers.size(),
+  fmt::print("Answers size: {}\n{}\n", answers.size(),
              fmt::join(answers.begin(), answers.end(), "\n"));
   timer().stop();
 
-  fmt::print("{}\n", timer().summary());
+  auto sss = timer().summary();
+  fmt::print("{}\n", sss);
+  fmt::print("End of main\n");
 
 }

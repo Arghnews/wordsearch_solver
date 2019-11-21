@@ -20,6 +20,9 @@
 #include "jr_assert.h"
 #include "dictionary.h"
 
+// For now for debug
+#include "trie.h"
+
 /* std::ostream& operator<<(std::ostream& os, const wordsearch_solver::Index& i) */
 /* { */
 /*   return os << "{" << i.first << ", " << i.second << "}"; */
@@ -173,8 +176,10 @@ std::string indexes_to_word(const Grid& grid, const Indexes& tail)
  * the end point. Then should go and see what the usual distances are. */
 
 //std::pair<std::vector<std::string>, std::vector<std::vector<Index>>>
-__attribute__((__noinline__)) StringIndexes find_words(
+__attribute__((__noinline__))
+StringIndexes find_words(
     const Dictionary& dictionary, const Grid& grid, const Index start)
+//    StringIndexes& stringindexes)
 {
   std::vector<std::string> found_words{};
   std::vector<std::vector<Index>> found_indexes{};
@@ -212,7 +217,8 @@ __attribute__((__noinline__)) StringIndexes find_words(
       // spdlog::debug/("Outputting: {}", tail_word);
 //      found_words.push_back(tail_word);
 //			found_indexes.push_back(tail_indexes);
-      stringindexes.insert({grid, tail_word, tail_indexes});
+//      stringindexes.insert({tail_word, tail_indexes, grid});
+      stringindexes.insert({tail_word, tail_indexes});
       JR_ASSERT(tail_word.size() == tail_indexes.size());
     }
 
@@ -244,6 +250,8 @@ __attribute__((__noinline__)) StringIndexes find_words(
           std::remove_reference_t<decltype(tail_word)>>, std::string>);
       // spdlog::debug/("tail_word is {}", tail_word);
       /* if (!vec_contains_string_that_starts_with(dictionary, tail_word)) */
+      // fmt::print("Dictionary state atm:\n{}\n",
+
       if (!dictionary.contains_prefix(tail_word))
 //      if (!vec_contains_string_that_starts_with(dictionary, tail_word))
       {
@@ -314,9 +322,9 @@ Grid grid_from_file(const std::filesystem::path& wordsearch_file)
       wordsearch_file);
   auto grid = std::make_shared<Grid::element_type>();
   // Interesting idea - https://stackoverflow.com/a/18514815/8594193
-  for (auto [inp, line] =
-      std::tuple{std::ifstream{wordsearch_file}, std::string{}};
-      std::getline(inp, line);)
+  std::ifstream inp{wordsearch_file};
+  std::string line;
+  for (; std::getline(inp, line);)
   {
     /* Erase every other character, keeping the first */
     bool char_next = true;
@@ -372,6 +380,10 @@ StringIndexes solve(const Dictionary& dict, const Grid& grid)
           std::distance(begin(*grid), i_it),
           std::distance(begin(*i_it), j_it),
           }));
+//      find_words(dict, grid, Index{
+//          std::distance(begin(*grid), i_it),
+//          std::distance(begin(*i_it), j_it),
+//          }, stringindexes);
 //      words_found.push_back(std::move(words));
 //      list_of_indexes_found.push_back(std::move(indexes));
     }
