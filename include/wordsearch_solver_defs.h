@@ -16,6 +16,15 @@ using Grid = std::shared_ptr<std::vector<std::string>>;
 //using Dictionary = std::set<std::string>;
 using Index = std::pair<std::size_t, std::size_t>;
 using Indexes = std::vector<Index>;
+
+// TODO: change this impl
+struct Result
+{
+  std::vector<std::size_t> contains;
+  std::vector<std::size_t> further;
+  std::vector<std::size_t> contains_and_further;
+};
+
 }
 
 #endif // WORDSEARCH_SOLVER_DEFS_H

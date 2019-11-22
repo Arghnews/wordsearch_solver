@@ -6,15 +6,19 @@
 #include <string>
 #include <vector>
 
+#include "wordsearch_solver_defs.h"
+
 class DictionaryStdSet
 {
 public:
 
-  bool contains(const std::string& key) const;
-  bool contains_prefix(const std::string& prefix) const;
+  wordsearch_solver::Result contains_and_further(std::string tail_word,
+      const std::string& suffixes) const;
 
   DictionaryStdSet(const std::vector<std::string>& dict);
 private:
+  bool contains(const std::string& key) const;
+  bool contains_prefix(const std::string& prefix) const;
   std::set<std::string> dictionary_;
 };
 

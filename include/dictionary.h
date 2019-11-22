@@ -1,10 +1,13 @@
 #ifndef DICTIONARY_H
 #define DICTIONARY_H
 
-#include <filesystem>
+#include <cstddef>
 #include <iostream>
+#include <new>
 #include <string>
-#include <set>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 #include "wordsearch_solver_defs.h"
 
@@ -14,15 +17,19 @@ namespace wordsearch_solver
 // https://mropert.github.io/2017/11/30/polymorphic_ducks/
 class Dictionary
 {
+
   public:
+
   struct concept_t
   {
     virtual ~concept_t()
     {
       std::cout << __PRETTY_FUNCTION__ << "\n";
     }
-    virtual bool do_contains(const std::string& key) const = 0;
-    virtual bool do_contains_prefix(const std::string& prefix) const = 0;
+    virtual Result do_contains_and_further(std::string tail_word,
+        const std::string& suffixes) const = 0;
+    // virtual bool do_contains(const std::string& key) const = 0;
+    // virtual bool do_contains_prefix(const std::string& prefix) const = 0;
   };
   template <typename T>
   struct model_t : public concept_t
@@ -35,14 +42,10 @@ class Dictionary
       std::cout << __PRETTY_FUNCTION__ << "\n";
     }
 
-    bool do_contains(const std::string& key) const override
+    Result do_contains_and_further(std::string tail_word,
+        const std::string& suffixes) const override
     {
-      return m_data.contains(key);
-    }
-
-    bool do_contains_prefix(const std::string& prefix) const override
-    {
-      return m_data.contains_prefix(prefix);
+      return m_data.contains_and_further(tail_word, suffixes);
     }
 
     T m_data;
@@ -73,20 +76,10 @@ public:
     return *this;
   }
 
-  bool contains(const std::string& key) const
+  Result contains_and_further(std::string tail_word,
+      const std::string& suffixes) const
   {
-    return m_impl->do_contains(key);
-  }
-
-  bool contains_prefix(const std::string& prefix) const
-  {
-    return m_impl->do_contains_prefix(prefix);
-  }
-
-  // TODO: remove, this is for debug
-  auto underlying() const
-  {
-    return m_impl.get();
+    return m_impl->do_contains_and_further(tail_word, suffixes);
   }
 
 private:

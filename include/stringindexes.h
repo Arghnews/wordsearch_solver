@@ -34,6 +34,7 @@ private:
   Indexes indexes_;
 
   // TODO: rest of these ops/mixin for them if can get it to work
+  // Or just get lazy, there must be a boost CRTP thingy that does this
   friend bool operator<(const StringIndex& si1, const StringIndex& si2);
   friend bool operator==(const StringIndex& si1, const StringIndex& si2);
   friend bool operator!=(const StringIndex& si1, const StringIndex& si2);

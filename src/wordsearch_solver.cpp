@@ -159,14 +159,62 @@ std::string indexes_to_word(const Grid& grid, const Indexes& tail)
 {
   std::string word;
   word.reserve(tail.size());
-  spdlog::debug("Grid: {}", grid);
+  // spdlog::debug("Grid: {}", grid);
   for (const auto [i, j]: tail)
   {
-    spdlog::debug("Index [{}, {}]", i, j);
+    // spdlog::debug("Index [{}, {}]", i, j);
     word.push_back(grid->at(i).at(j));
   }
   return word;
 }
+
+    // Ok so.
+    // Currently (especially with a single trie like data structure) we do extra
+    // work.
+    // Current method is to see if contains this word, then add surrounding
+    // words in the wordsearch ie. this word with suffixes around it if these
+    // prefixes have further entries. Any that have further entries then get
+    // added to the next layer.
+    // However in this, for stuff like the trie at least and for other impls,
+    // when we find the prefixes for the next layer to add, we do all the work
+    // to find out if the next layer items are contained too. And then currently
+    // we then add them to the next layer, and then on said next layer we will
+    // once again check if they are contained and then check if prefix entries
+    // exist with the new suffixes.
+    // My current solution has a bool attached to each layer entry in "a". This
+    // says whether or not this entry has been processed?
+    // If bool is true, has been added already and don't need to do contains on
+    // it, just contains_prefix on the new suffixes.
+    // If bool is false (default), then we act as normal checking if it's
+    // contained and then checking adding surrounding letters.
+    // This may also help if decided to try a split impl with a hash table for
+    // contains and a contains_prefix trie or other (although tbh unlikely this
+    // would be faster).
+    //
+    //
+    //
+    //
+    //
+    // !!!!!!!!!!!!!!!!!!! -> Change to array of bools as well passing
+    // suffixes etc. This keeps position too so that index is easy to find.
+    //
+    //
+    //
+    // 4 cases.
+    // contained and further
+    // contained but no further
+    // further but not contained
+    // neither
+    //
+    // if unchecked(tail_word)
+    //   valid_suffixes = contains_prefixes(tail_word, suffixes)
+    //   for (const auto c: valid_suffixes)
+    //     new_layer.push_back(tail_word + valid_suffixes)
+    //  else
+    //   [valid_suffixes, ] = contains_and_prefixes(tail_word, suffixes)
+    //   for (const auto c: valid_suffixes)
+    //
+    //
 
 /* Several points - for the find_words major loop we don't need to start at
  * dictionary.begin() every time if remembered where we were in dictionary - or
@@ -181,6 +229,32 @@ StringIndexes find_words(
     const Dictionary& dictionary, const Grid& grid, const Index start)
 //    StringIndexes& stringindexes)
 {
+  //
+  //
+  //
+  //
+  //
+  //
+  //
+  //
+  //
+  //
+  //
+  //
+  // TODO: refactor the shit out of this
+  //
+  //
+  //
+  //
+  //
+  //
+  //
+  //
+  //
+  //
+  //
+  //
+  //
   std::vector<std::string> found_words{};
   std::vector<std::vector<Index>> found_indexes{};
   std::vector<std::vector<Index>> a{};
@@ -197,30 +271,59 @@ StringIndexes find_words(
     return grid->at(index.first).at(index.second);
   };
 
+  std::vector<Index> new_layer;
+
 //  stringindexes.insert()
-  a.push_back({start});
-  tail_indexes.push_back({start});
-  tail_word.push_back(index_to_char(start));
+  // a.push_back({start});
+  // tail_indexes.push_back({start});
+  // tail_word.push_back(index_to_char(start));
+
+  // TODO: for god's sake put this in a function
+  // surrounding(start.first, start.second, grid, next_indexes);
+  // const auto init_suffixes = next_indexes;
+  // const std::string init_suffixes_str = indexes_to_word(grid, init_suffixes);
+  const std::vector<Index> init_suffixes = {start};
+  const auto init_suffixes_str = std::string{index_to_char(start)};
+  const wordsearch_solver::Result init_result = dictionary.contains_and_further(
+      "", {index_to_char(start)});
+
+  // Output words that satisfy contains, add those that satisfy further to the
+  // queue to be added next iteration
+  for (const auto i: init_result.contains)
+  {
+    stringindexes.insert({std::string{init_suffixes_str[i]}, init_suffixes,
+        grid});
+  }
+  for (const auto i: init_result.contains_and_further)
+  {
+    stringindexes.insert({std::string{init_suffixes_str[i]}, init_suffixes,
+        grid});
+    new_layer.emplace_back(init_suffixes[i]);
+  }
+  for (const auto i: init_result.further)
+  {
+    new_layer.emplace_back(init_suffixes[i]);
+  }
+
+  if (!new_layer.empty())
+  {
+    // spdlog::debug/("Adding new layer of letters {}", indexes_to_word(grid,
+//            new_layer));
+    tail_indexes.push_back(new_layer[0]);
+    tail_word.push_back(index_to_char(new_layer[0]));
+    a.emplace_back(std::move(new_layer));
+  }
+
 
   while (!a.empty())
   {
+    new_layer.clear();
     // spdlog::debug/("\nIteration");
     JR_ASSERT(!a.empty() && !a.back().empty());
     const auto& last = a.back().front();
 
     // spdlog::debug/("Tail is {}", tail_word);
     // spdlog::debug/("At position {} {}", last, index_to_char(last));
-
-    if (dictionary.contains(tail_word))
-    /* if (test_contains(dictionary, tail_word)) */
-    {
-      // spdlog::debug/("Outputting: {}", tail_word);
-//      found_words.push_back(tail_word);
-//			found_indexes.push_back(tail_indexes);
-//      stringindexes.insert({tail_word, tail_indexes, grid});
-      stringindexes.insert({tail_word, tail_indexes});
-      JR_ASSERT(tail_word.size() == tail_indexes.size());
-    }
 
     surrounding(last.first, last.second, grid, next_indexes);
     // spdlog::debug/("Surrouding are {} {}", next_indexes, indexes_to_word(grid, next_indexes));
@@ -235,34 +338,35 @@ StringIndexes find_words(
     // spdlog::debug/("Surrouding are now {}", next_indexes);
 
     /* Remove surrounding indexes if would not ever form word */
-    std::vector<Index> new_layer;
-    const auto possible_directions = 8ULL;
-    new_layer.reserve(possible_directions);
 
-    /* This last char should be changed every loop iteration */
-    tail_word.push_back('\0');
-    for (const auto [i, j]: next_indexes)
+    const auto suffixes = next_indexes;
+    const std::string suffixes_str = indexes_to_word(grid, suffixes);
+
+    const wordsearch_solver::Result result = dictionary.contains_and_further(
+        tail_word, suffixes_str);
+
+    // Output words that satisfy contains, add those that satisfy further to the
+    // queue to be added next iteration
+    const auto concat = [] (std::vector<Index> indexes, const Index index)
     {
-      const char letter = grid->at(i).at(j);
-      tail_word.back() = letter;
-      static_assert(std::is_same_v<
-          std::remove_cv_t<
-          std::remove_reference_t<decltype(tail_word)>>, std::string>);
-      // spdlog::debug/("tail_word is {}", tail_word);
-      /* if (!vec_contains_string_that_starts_with(dictionary, tail_word)) */
-      // fmt::print("Dictionary state atm:\n{}\n",
-
-      if (!dictionary.contains_prefix(tail_word))
-//      if (!vec_contains_string_that_starts_with(dictionary, tail_word))
-      {
-        // spdlog::debug/("Rejecting word prefix {}", tail_word);
-      } else
-      {
-        new_layer.emplace_back(i, j);
-      }
+      indexes.push_back(index);
+      return indexes;
+    };
+    for (const auto i: result.contains)
+    {
+      stringindexes.insert(
+          {tail_word + suffixes_str[i], concat(tail_indexes, suffixes[i])});
     }
-    /* Remove extra trailing char */
-    tail_word.pop_back();
+    for (const auto i: result.contains_and_further)
+    {
+      stringindexes.insert(
+          {tail_word + suffixes_str[i], concat(tail_indexes, suffixes[i])});
+      new_layer.emplace_back(suffixes[i]);
+    }
+    for (const auto i: result.further)
+    {
+      new_layer.emplace_back(suffixes[i]);
+    }
 
     if (!new_layer.empty())
     {

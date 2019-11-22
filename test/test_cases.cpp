@@ -93,7 +93,8 @@ TEST_CASE( "Check test inputs", "[input]")
 }
 
 TEMPLATE_TEST_CASE( "Test wordsearch/dict implementations", "[test]",
-    DictionaryStdSet, Trie)
+    DictionaryStdSet)
+    // DictionaryStdSet, Trie)
 {
   const auto dictionary_path = test_cases_dirname / dictionary_filename;
   const auto dict_words = sort_unique(::readlines(dictionary_path));

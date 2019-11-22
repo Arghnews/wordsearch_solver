@@ -277,8 +277,8 @@ int main(int argc, char** argv)
   // const auto dict = Trie(vec);
   // const auto dict = Trie(readlines(args.dictionary_path));
   fmt::print("Next line builds dict\n");
-  const wordsearch_solver::Dictionary dict = Trie(vec);
-  // const wordsearch_solver::Dictionary dict = DictionaryStdSet(vec);
+  // const wordsearch_solver::Dictionary dict = Trie(vec);
+  const wordsearch_solver::Dictionary dict = DictionaryStdSet(vec);
   // fmt::print("{}\n", dict);
   fmt::print("Prev line builds dict\n");
   // const auto dict = Trie(s);
