@@ -7,6 +7,7 @@
 #include <utility>
 
 // #include "jr_assert.h"
+#include "wordsearch_solver_defs.h"
 
 namespace detail
 {
@@ -128,34 +129,38 @@ inline bool contains_prefix(const TrieImpl& t, const std::string& prefix)
     tp = tp->lookup(*it);
   }
   //JR_ASSERT(false, "Unreachable");
+  assert(false && "Unreachable");
 }
 
-inline bool contains(const TrieImpl& t, const std::string& word)
+inline std::pair<bool, bool>
+contains_and_further(const TrieImpl& t, const std::string& word)
 {
   // return false;
   auto it = word.begin();
   const auto* tp = &t;
 
-  //JR_ASSERT(!word.empty(), "Empty word lookup?");
-  if (word.begin() == word.end())
-  {
-    return true;
-  }
+  // In this loop, the tp pointers "lags" behind the iterator by one. This is so
+  // when the iterator over "word" reaches the end, tp is at the previous and
+  // valid pointer in the trie.
   for (;; ++it)
   {
     if (it == word.end())
     {
-      if (tp != nullptr && tp->is_end_of_word_ == true)
+      // Have reached end of word
+      if (tp != nullptr)
       {
-        return true;
+        return {tp->is_end_of_word_, !tp->children_.empty()};
       }
-      return false;
+      return {false, false};
     } else if (tp == nullptr)
     {
-      return false;
+      // Ran out of letters, couldn't find end of word
+      // return false;
+      return {false, false};
     }
     tp = tp->lookup(*it);
   }
+  assert(false && "Unreachable");
   //JR_ASSERT(false, "Unreachable");
 }
 
@@ -232,21 +237,57 @@ inline void traverse(const TrieImpl& root, F&& f)
 
 class Trie
 {
+  // const detail::TrieImpl* contains(const std::string& key) const
+  // {
+    // // std::cout << __PRETTY_FUNCTION__ << " key: " << key << "\n";
+    // const auto b = detail::contains(trie_, key);
+    // // std::cout << "Returning " << b << "\n";
+    // return b;
+  // }
+  // bool contains_prefix(const std::string& key) const
+  // {
+    // // std::cout << __PRETTY_FUNCTION__ << " key: " << key << "\n";
+    // const auto b = detail::contains_prefix(trie_, key);
+    // // std::cout << "Returning " << b << "\n";
+    // return b;
+  // }
   public:
-  bool contains(const std::string& key) const
+  wordsearch_solver::Result contains_and_further(std::string stem,
+      const std::string& suffixes) const
   {
-    // std::cout << __PRETTY_FUNCTION__ << " key: " << key << "\n";
-    const auto b = detail::contains(trie_, key);
-    // std::cout << "Returning " << b << "\n";
-    return b;
+    wordsearch_solver::Result result;
+
+    for (auto i = 0ULL; i < suffixes.size(); ++i)
+    {
+      stem.push_back(suffixes[i]);
+
+      // Wonder if possible to give optimiser chance to somehow schedule these
+      // together ie do both in separate arrays and then & them for the both?
+      // Would that be faster than this where maybe we must wait for both?
+      // Maybe change this to bitset after or something anyway rather than fat
+      // heap vectors
+      const auto [contains, further] = detail::contains_and_further(trie_,
+          stem);
+      // this->contains_and_further
+      // const auto contains = this->contains(stem);
+      // const auto further = this->contains_prefix(stem);
+      if (contains && further)
+      {
+        result.contains_and_further.push_back(i);
+      } else if (contains)
+      {
+        result.contains.push_back(i);
+      } else if (further)
+      {
+        result.further.push_back(i);
+      }
+
+      stem.pop_back();
+    }
+
+    return result;
   }
-  bool contains_prefix(const std::string& key) const
-  {
-    // std::cout << __PRETTY_FUNCTION__ << " key: " << key << "\n";
-    const auto b = detail::contains_prefix(trie_, key);
-    // std::cout << "Returning " << b << "\n";
-    return b;
-  }
+
   bool insert(const std::string& word)
   {
     // If make pretty iterators can return iterator to inserted here

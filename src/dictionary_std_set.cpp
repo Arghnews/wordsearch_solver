@@ -18,25 +18,25 @@ DictionaryStdSet::DictionaryStdSet(const std::vector<std::string>& dict)
 {}
 
 wordsearch_solver::Result DictionaryStdSet::contains_and_further(
-    std::string tail_word, const std::string& suffixes) const
+    std::string stem, const std::string& suffixes) const
 {
   wordsearch_solver::Result result;
 
   // NOTE: found in benchmarking previous version that constructing a string for
-  // tail_word each time was a noticable expense. Consider if this again is a
+  // stem each time was a noticable expense. Consider if this again is a
   // performance problem.
 
   for (auto i = 0ULL; i < suffixes.size(); ++i)
   {
-    tail_word.push_back(suffixes[i]);
+    stem.push_back(suffixes[i]);
 
     // Wonder if possible to give optimiser chance to somehow schedule these
     // together ie do both in separate arrays and then & them for the both?
     // Would that be faster than this where maybe we must wait for both?
     // Maybe change this to bitset after or something anyway rather than fat
     // heap vectors
-    const auto contains = this->contains(tail_word);
-    const auto further = this->contains_prefix(tail_word);
+    const auto contains = this->contains(stem);
+    const auto further = this->contains_prefix(stem);
     if (contains && further)
     {
       result.contains_and_further.push_back(i);
@@ -48,7 +48,7 @@ wordsearch_solver::Result DictionaryStdSet::contains_and_further(
       result.further.push_back(i);
     }
 
-    tail_word.pop_back();
+    stem.pop_back();
   }
   return result;
 }

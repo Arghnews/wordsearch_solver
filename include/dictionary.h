@@ -26,7 +26,7 @@ class Dictionary
     {
       std::cout << __PRETTY_FUNCTION__ << "\n";
     }
-    virtual Result do_contains_and_further(std::string tail_word,
+    virtual Result do_contains_and_further(std::string stem,
         const std::string& suffixes) const = 0;
     // virtual bool do_contains(const std::string& key) const = 0;
     // virtual bool do_contains_prefix(const std::string& prefix) const = 0;
@@ -42,10 +42,10 @@ class Dictionary
       std::cout << __PRETTY_FUNCTION__ << "\n";
     }
 
-    Result do_contains_and_further(std::string tail_word,
+    Result do_contains_and_further(std::string stem,
         const std::string& suffixes) const override
     {
-      return m_data.contains_and_further(tail_word, suffixes);
+      return m_data.contains_and_further(stem, suffixes);
     }
 
     T m_data;
@@ -76,10 +76,10 @@ public:
     return *this;
   }
 
-  Result contains_and_further(std::string tail_word,
-      const std::string& suffixes) const
+  Result contains_and_further(std::string stem, const std::string& suffixes)
+    const
   {
-    return m_impl->do_contains_and_further(tail_word, suffixes);
+    return m_impl->do_contains_and_further(stem, suffixes);
   }
 
 private:
