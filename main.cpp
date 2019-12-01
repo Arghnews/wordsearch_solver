@@ -5,263 +5,21 @@
 #include <initializer_list>
 #include <ios>
 #include <iostream>
+#include <iterator>
 #include <string>
+#include <optional>
 #include <type_traits>
 #include <utility>
+#include <set>
 #include <vector>
 
 #include "prettyprint.hpp"
-#include "wadoo.h"
+#include "trie.h"
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #include "jr_assert.h"
 
 using namespace std::literals;
-
-namespace detail
-{
-
-struct TrieImpl
-{
-  std::vector<TrieImpl*> children_;
-  char value_;
-  bool is_end_of_word;
-
-  TrieImpl() = default;
-  explicit TrieImpl(char c)
-    : children_()
-    , value_(c)
-    , is_end_of_word(false)
-  {}
-
-  ~TrieImpl()
-  {
-    for (const auto child: children_)
-    {
-      delete child;
-    }
-  }
-
-  TrieImpl* insert(char c)
-  {
-    JR_ASSERT(c != '\0', "Do not want to insert null");
-    auto it = children_.begin();
-    for (; it != children_.end(); ++it)
-    {
-      if ((*it)->value_ == c)
-      {
-        return *it;
-      } else if ((*it)->value_ > c) // Ascii specific, case specific
-      {
-        break;
-      }
-    }
-    return *children_.insert(it, new TrieImpl(c));
-  }
-
-  TrieImpl* lookup(char c) const
-  {
-    for (const auto child: children_)
-    {
-      if (child->value_ == c)
-      {
-        return child;
-      }
-    }
-    return nullptr;
-  }
-
-};
-
-// Whether trie has words that start_with prefix, excluding the prefix word
-bool contains_prefix(const TrieImpl& t, const std::string& prefix)
-{
-  JR_ASSERT(!prefix.empty(), "Empty word lookup?");
-
-  auto it = prefix.begin();
-  const auto* tp = &t;
-
-  if (prefix.begin() == prefix.end())
-  {
-    return true;
-  }
-  for (;; ++it)
-  {
-    if (it == prefix.end())
-    {
-      if (tp != nullptr && !tp->children_.empty())
-      {
-        return true;
-      }
-      return false;
-    } else if (tp == nullptr)
-    {
-      return false;
-    }
-    tp = tp->lookup(*it);
-  }
-  JR_ASSERT(false, "Unreachable");
-}
-
-bool contains(const TrieImpl& t, const std::string& word)
-{
-  auto it = word.begin();
-  const auto* tp = &t;
-
-  JR_ASSERT(!word.empty(), "Empty word lookup?");
-  if (word.begin() == word.end())
-  {
-    return true;
-  }
-  for (;; ++it)
-  {
-    if (it == word.end())
-    {
-      if (tp != nullptr && tp->is_end_of_word == true)
-      {
-        return true;
-      }
-      return false;
-    } else if (tp == nullptr)
-    {
-      return false;
-    }
-    tp = tp->lookup(*it);
-  }
-  JR_ASSERT(false, "Unreachable");
-}
-
-std::pair<TrieImpl*, bool> insert(TrieImpl& t, const std::string& word)
-{
-  auto* tp = &t;
-  for (const char c: word)
-  {
-    // fmt::print("Inserting {}\n", c);
-    tp = tp->insert(c);
-  }
-  if (!tp->is_end_of_word)
-  {
-    tp->is_end_of_word = true;
-    return {tp, true};
-  }
-  return {tp, false};
-}
-
-template<class F>
-void traverse(const TrieImpl& root, F&& f)
-{
-  std::vector<std::pair<const TrieImpl*, decltype(TrieImpl::children_)::const_iterator>> v;
-  std::string stack;
-  // Assume root is single elemed
-  // JR_ASSERT(root.children_.size() == 1);
-  // v.emplace_back(root.children_.front(), root.children_.front()->children_.begin());
-  if (!root.children_.empty())
-  {
-    v.emplace_back(&root, root.children_.begin());
-  }
-
-  while (!v.empty())
-  {
-    // fmt::print("\n--\n");
-    const auto& [t, t_child_it] = v.back();
-    if (t_child_it == t->children_.begin())
-    {
-      if (t->value_ != '\0') // special case for root, to remove
-      {
-        // fmt::print("Adding value: {}\n", t->value_);
-        stack.push_back(t->value_);
-      }
-      if (t->is_end_of_word)
-      {
-        // Coroutine anyone?
-        f(stack);
-        // fmt::print("Output: {}\n", stack);
-      }
-    }
-    if (t->children_.end() != t_child_it)
-    {
-      v.emplace_back(*t_child_it, (*t_child_it)->children_.begin());
-      // Iterators may be invalidated so must get position afresh and not reuse
-      // previous references to iterators
-      // Loop only runs while !v.empty() and we just emplace_back so end -2 ok
-      ++std::prev(v.end(), 2)->second;
-    } else
-    {
-      while (!v.empty() && v.back().second == v.back().first->children_.end())
-      {
-        v.pop_back();
-        stack.pop_back();
-      }
-    }
-
-  }
-
-}
-
-} // namespace detail
-
-class Trie
-{
-  public:
-  bool contains(const std::string& key) const
-  {
-    return detail::contains(trie_, key);
-  }
-  bool contains_prefix(const std::string& key) const
-  {
-    return detail::contains_prefix(trie_, key);
-  }
-  bool insert(const std::string& word)
-  {
-    // If make pretty iterators can return iterator to inserted here
-    const auto [tp, inserted] = detail::insert(trie_, word);
-    size_ += inserted;
-    return inserted;
-  }
-  template<class Container>
-  void copy_insert_all(const Container& c)
-  {
-    for (const auto& val: c)
-    {
-      this->insert(val);
-    }
-  }
-  std::vector<std::string> as_vector() const
-  {
-    std::vector<std::string> traverse_words;
-    this->traverse([&traverse_words] (const auto& word)
-        {
-          fmt::print("{}\n", word);
-          traverse_words.push_back(word);
-        });
-    return traverse_words;
-  }
-  std::size_t size() const
-  {
-    return size_;
-  }
-  Trie() = default;
-  explicit Trie(const std::initializer_list<std::string>& keys)
-    : trie_()
-    , size_()
-  {
-    this->copy_insert_all(keys);
-  }
-  explicit Trie(const std::vector<std::string>& keys)
-    : trie_()
-    , size_()
-  {
-    this->copy_insert_all(keys);
-  }
-  template<class F>
-  void traverse(F&& f) const
-  {
-    detail::traverse(trie_, f);
-  }
-  private:
-  detail::TrieImpl trie_;
-  std::size_t size_;
-};
 
 int main()
 {
@@ -351,6 +109,7 @@ int main()
       "ahe",
       "ahem",
       "boom",
+      "boomer",
       "zoo",
       "burn",
       "burning",
@@ -358,8 +117,7 @@ int main()
       "burner",
       "burner",
     };
-    Trie t{};
-    t.copy_insert_all(bla);
+    const Trie t{bla};
     fmt::print("{}\n", t.as_vector());
 
     auto bla2 = bla;
@@ -368,6 +126,101 @@ int main()
     fmt::print("{}\n", bla2);
     JR_ASSERT(t.size() == bla2.size(), "{} vs {}", t.size(), bla2.size());
     JR_ASSERT(t.as_vector() == bla2);
+    JR_ASSERT(std::all_of(bla.begin(), bla.end(),
+          [&t] (const auto& str)
+          {
+            return t.contains(str);
+          }));
+  }
+
+  {
+    const std::set<std::string> w{"hi", "there", "chum"};
+    const Trie t{w.begin(), w.end()};
+    const auto v = t.as_vector();
+    JR_ASSERT(std::equal(w.begin(), w.end(), v.begin(), v.end()));
+  }
+
+  {
+    const char* arr[]{"hi", "there", "chum"};
+    const auto* const p = arr;
+    const auto* const p2 = p + std::size(arr);
+    const Trie t{p, p2};
+    const auto v = t.as_vector();
+    fmt::print("As vector: {}\n", v);
+    JR_ASSERT(std::is_permutation(
+          std::begin(arr), std::end(arr), v.begin(), v.end()));
+  }
+
+  {
+    const std::set<std::string> w{"hi", "there", "chum"};
+    const Trie t{w.begin(), w.end()};
+    const auto v = t.as_vector();
+    JR_ASSERT(std::equal(w.begin(), w.end(), v.begin(), v.end()));
+    JR_ASSERT(!t.contains_prefix("y"));
+    JR_ASSERT(!t.contains_prefix("yq"));
+  }
+
+  {
+    const std::vector<std::string> bla{
+      "burner",
+      "zoo",
+      "zoological",
+      "ahem",
+      "ahe",
+      "aheaaaaaaaaa",
+      "ahem",
+      "boom",
+      "boomer",
+      "zoo",
+      "burn",
+      "burning",
+      "burned",
+      "burner",
+      "burner",
+      "bur",
+    };
+    const Trie t{bla};
+    fmt::print("{}\n", t.as_vector());
+
+    auto bla2 = bla;
+    std::sort(bla2.begin(), bla2.end());
+    bla2.erase(std::unique(bla2.begin(), bla2.end()), bla2.end());
+    fmt::print("{}\n", bla2);
+    JR_ASSERT(t.size() == bla2.size(), "{} vs {}", t.size(), bla2.size());
+    JR_ASSERT(t.as_vector() == bla2);
+    JR_ASSERT(std::all_of(bla.begin(), bla.end(),
+          [&t] (const auto& str)
+          {
+            return t.contains(str);
+          }));
+
+    JR_ASSERT(!t.contains("burne"));
+    JR_ASSERT(!t.contains("buzn"));
+    JR_ASSERT(!t.contains("ba"));
+    JR_ASSERT(!t.contains("zooz"));
+    JR_ASSERT(!t.contains("x"));
+    for (const auto c: "abcdefghijklmnopqrstuvwxyz")
+    {
+      JR_ASSERT(!t.contains(std::string{"ahem"} + c));
+    }
+
+    auto str = [&bla] (auto&& s)
+    {
+      JR_ASSERT(std::find(bla.begin(), bla.end(), s) != bla.end(),
+          "Error in test setup, {} not in vector", s);
+      return s;
+    };
+    auto result = t.contains_and_further(str("ahe"), "amz");
+    JR_ASSERT(result.contains.size() == 1 && result.contains.at(0) == 1);
+    JR_ASSERT(result.further.size() == 1);
+    JR_ASSERT(result.contains_and_further.size() == 0);
+
+    auto result2 = t.contains_and_further("bur", "amzn");
+    JR_ASSERT(result2.contains.size() == 0);
+    JR_ASSERT(result2.further.size() == 0);
+    JR_ASSERT(result2.contains_and_further.size() == 1);
+    JR_ASSERT(result2.contains_and_further.at(0) == 3);
   }
 
 }
+

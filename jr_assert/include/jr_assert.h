@@ -1,11 +1,11 @@
 #ifndef JR_ASSERT_H
 #define JR_ASSERT_H
 
+#include <fmt/core.h>
 #include <fmt/format.h>
-#include <spdlog/spdlog.h>  // Must precede fmt include else linker errors
+#include <iostream>
 #include <cstdlib>
 #include <type_traits>
-#include <string_view>
 #include <utility>
 
 /*
@@ -40,6 +40,7 @@ namespace jr_assert
 {
 
 template <class... Args>
+[[noreturn]]
 void assert_after_func(const char* file, const int line, const char* func,
                        const char* expression,
                        Args&&... args)
@@ -54,14 +55,18 @@ void assert_after_func(const char* file, const int line, const char* func,
     b.push_back(' ');
     fmt::format_to(b, std::forward<Args>(args)...);
   }
-  spdlog::error(std::string_view{b.data(), b.size()});
+  std::cerr << fmt::to_string(b) << "\n";
+  // spdlog::error(std::string_view{b.data(), b.size()});
   // Flush before abort
   // https://github.com/gabime/spdlog/wiki/7.-Flush-policy#manual-flush
-  spdlog::shutdown();
   std::abort();
 }
 
 }
+
+// Wanted to add static_assert(!std::is_array_v<decltype(assertion)>);
+// To catch evaluating string literals by mistake but then get lambda in
+// unevaluated context error
 
 #ifdef JR_DISABLE_ASSERTS
   #define JR_ASSERT(assertion, ...)                                            \
@@ -74,7 +79,6 @@ void assert_after_func(const char* file, const int line, const char* func,
   #define JR_ASSERT(assertion, ...)                                            \
   do                                                                           \
   {                                                                            \
-    static_assert(!std::is_array_v<decltype(assertion)>);                      \
     if (!(static_cast<bool>(assertion)))                                       \
     {                                                                          \
       jr_assert::assert_after_func(__FILE__, __LINE__, __func__,               \

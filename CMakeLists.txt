@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
-project(t)
+project(trie_main)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -39,18 +39,9 @@ set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-fsanitize=address,undefined")
 
 add_subdirectory(jr_assert)
 
-add_library(wadoo
-    wadoo.cpp
-    wadoo.h
-    )
-target_include_directories(wadoo
-    INTERFACE ${PROJECT_SOURCE_DIR})
-target_link_libraries(wadoo
-    PRIVATE jr_assert::jr_assert
-    )
-add_library(wadoo::wadoo ALIAS wadoo)
+add_subdirectory(trie)
 
-add_executable(${PROJECT_NAME}_main main.cpp)
+add_executable(${PROJECT_NAME} main.cpp)
 
 # How to import a shared library just as the "object"
 add_library(pro INTERFACE IMPORTED GLOBAL)
@@ -65,10 +56,10 @@ add_library(pro::pro ALIAS pro)
 # find_library(pro NAMES libprofiler.so PATHS /usr/local/lib/)
 # target_link_libraries(pro INTERFACE -lprofiler)
 
-target_link_libraries(${PROJECT_NAME}_main
+target_link_libraries(${PROJECT_NAME}
   PRIVATE
   pro::pro
-  wadoo::wadoo
+  trie::trie
   # pro
   jr_assert::jr_assert
   fmt::fmt
@@ -76,7 +67,7 @@ target_link_libraries(${PROJECT_NAME}_main
   # -lprofiler
   )
 
-target_link_options(${PROJECT_NAME}_main BEFORE
+target_link_options(${PROJECT_NAME} BEFORE
   PRIVATE "-fsanitize=address,undefined")
 
 add_custom_target(after_all_built ALL)
