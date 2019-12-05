@@ -24,8 +24,7 @@ find_package(fmt REQUIRED)
 # find_package(spdlog REQUIRED)
 find_package(Catch2 REQUIRED)
 find_package(Boost 1.70.0 REQUIRED) # COMPONENTS container)
-
-add_subdirectory(jr_assert)
+find_package(jr_assert REQUIRED)
 
 add_subdirectory(trie)
 
@@ -101,7 +100,7 @@ target_compile_options(${PROJECT_NAME}
     # PRIVATE "-Werror=shadow" "-Weffc++")
 target_link_libraries(${PROJECT_NAME}
     PRIVATE jr_assert::jr_assert
-    PUBLIC -lstdc++fs trie::trie fmt::fmt
+    PUBLIC -lstdc++fs trie_wrapper::trie_wrapper fmt::fmt
   )
 #target_link_options(${PROJECT_NAME} BEFORE
 #  PRIVATE "-fsanitize=address,undefined")

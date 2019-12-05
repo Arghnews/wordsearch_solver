@@ -17,7 +17,7 @@
 #include <fmt/ostream.h> // Need for printing vector etc. with prettyprint
 #include "spdlog/spdlog.h"
 #include "prettyprint.hpp"
-#include "jr_assert.h"
+#include "jr_assert/jr_assert.h"
 #include "dictionary.h"
 
 // For now for debug
@@ -104,10 +104,12 @@ void surrounding(const std::size_t i, const std::size_t j,
   insert_if_valid(i - 1, j);
   insert_if_valid(i - 1, j + 1);
 
-  for (auto c = std::distance(last_result, result.end()); c > 0; --c)
-  {
-    result.pop_back();
-  }
+  result.resize(
+      static_cast<std::size_t>(std::distance(result.begin(), last_result)));
+  // for (auto c = std::distance(last_result, result.end()); c > 0; --c)
+  // {
+    // result.pop_back();
+  // }
 }
 
 /* Sadly from looking at a call graph it seems that the std::string_view is not
@@ -163,7 +165,8 @@ std::string indexes_to_word(const Grid& grid, const Indexes& tail)
   for (const auto [i, j]: tail)
   {
     // spdlog::debug("Index [{}, {}]", i, j);
-    word.push_back(grid->at(i).at(j));
+    // word.push_back(grid->at(i).at(j));
+    word.push_back((*grid.get())[i][j]);
   }
   return word;
 }

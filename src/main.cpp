@@ -19,7 +19,7 @@
 #include <fmt/chrono.h>
 #include <spdlog/spdlog.h>
 #include <spdlog/common.h>
-#include "jr_assert.h"
+#include "jr_assert/jr_assert.h"
 
 using namespace std::literals;
 
@@ -189,6 +189,8 @@ int main(int argc, char** argv)
     spdlog::level::level_enum level = spdlog::level::info;
     std::optional<std::size_t> min_word_len;
     bool sort_by_length = false;
+    std::string backend;
+    bool quiet = false;
   } args;
 
   auto cli = lyra::cli_parser()
@@ -206,8 +208,15 @@ int main(int argc, char** argv)
     lyra::opt([&] (bool) { args.level = spdlog::level::debug; })
     ["-v"]["--verbose"] ("Verbose flag")
     |
-    lyra::opt(args.min_word_len, "Length")
-    ["-m"]["--min-length"] ("Only print words longer than this")
+    lyra::opt(args.quiet)
+    ["-q"]["--quiet"] ("Don't print answers").optional()
+    // |
+    // lyra::opt(args.min_word_len, "Length")
+    // ["-m"]["--min-length"] ("Only print words longer than this")
+    |
+    lyra::opt(args.backend, "Backend")
+    ["-b"]["--backend"] ("Which backend solver to use for dict [stdset, trie]")
+    .choices("stdset", "trie").required()
     ;
 
   auto result = cli.parse({argc, argv});
@@ -233,6 +242,8 @@ int main(int argc, char** argv)
   JR_ASSERT(std::filesystem::exists(args.wordsearch_path),
       "Wordsearch file does not seem to exist at {}", args.wordsearch_path);
 
+  fmt::print("Using backend: {}\n", args.backend);
+
 //  std::vector<std::string> timings;
 //  auto add_timing = [&timings] (auto&&... args)
 //  {
@@ -255,7 +266,6 @@ int main(int argc, char** argv)
   // Try using libc++ rather than libstdc++
   // Ignore this?
   // ->>Minimal example<<-
-  const auto vec = ::readlines(args.dictionary_path);
   // std::vector<std::string> vec
   // {
     // "a",
@@ -274,11 +284,29 @@ int main(int argc, char** argv)
   // const wordsearch_solver::Grid grid = std::make_shared<std::vector<std::string>>
     // (grid_inline);
 
+  // TODO: This >should< be an enum, or even better I think an argparser should
+  // handle this for you (somehow)
+
+  const auto vec = ::readlines(args.dictionary_path);
+
+  const wordsearch_solver::Dictionary dict = [&] ()
+  {
+  if (args.backend == "stdset")
+  {
+    return wordsearch_solver::Dictionary{DictionaryStdSet(vec)};
+  } else if (args.backend == "trie")
+  {
+    return wordsearch_solver::Dictionary{TrieWrapper(vec)};
+  } else
+  {
+    JR_ASSERT(false, "Unrecognised backend option {}", args.backend);
+  }
+  }();
+
   // const auto dict = Trie(vec);
   // const auto dict = Trie(readlines(args.dictionary_path));
   fmt::print("Next line builds dict\n");
   // const wordsearch_solver::Dictionary dict = Trie(vec);
-  const wordsearch_solver::Dictionary dict = DictionaryStdSet(vec);
   // fmt::print("{}\n", dict);
   fmt::print("Prev line builds dict\n");
   // const auto dict = Trie(s);
@@ -288,7 +316,10 @@ int main(int argc, char** argv)
   timer().stop();
 
   timer().start("Solve");
+
+  // ProfilerEnable();
   const auto a = wordsearch_solver::solve(dict, wordsearch);
+  // ProfilerDisable();
   auto a1 = a.words();
   timer().stop();
 
@@ -323,8 +354,17 @@ int main(int argc, char** argv)
     // std::cout << a << "\n";
     // fmt::print("a: {}\n", a);
   }
-  fmt::print("Answers size: {}\n{}\n", answers.size(),
-             fmt::join(answers.begin(), answers.end(), "\n"));
+  fmt::print("Answers size: {}\n", answers.size());
+  if (args.quiet)
+  {
+    if (!answers.empty())
+    {
+      void(answers.back());
+    }
+  } else
+  {
+    fmt::print("Answers:\n{}\n", fmt::join(answers.begin(), answers.end(), "\n"));
+  }
   timer().stop();
 
   auto sss = timer().summary();

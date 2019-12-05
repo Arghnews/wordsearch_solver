@@ -1,6 +1,6 @@
 #include "stringindexes.h"
 #include "wordsearch_solver.h"
-#include "jr_assert.h"
+#include "jr_assert/jr_assert.h"
 
 #include <algorithm>
 #include <cstddef>

@@ -9,7 +9,7 @@
 #include <optional>
 #include <set>
 
-#include "jr_assert.h"
+#include "jr_assert/jr_assert.h"
 
 //using namespace wordsearch_solver;
 

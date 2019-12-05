@@ -1,8 +1,11 @@
 cmake_minimum_required(VERSION 3.14)
-project(trie)
+project(trie_wrapper)
+
+find_package(fmt REQUIRED)
+find_package(trie REQUIRED)
 
 add_library(${PROJECT_NAME} INTERFACE)
-add_library(trie::trie ALIAS ${PROJECT_NAME})
+add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 target_include_directories(${PROJECT_NAME}
     INTERFACE
@@ -10,7 +13,9 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
     INTERFACE
+    trie::trie
     jr_assert::jr_assert
+    fmt::fmt
     )
 
 # TODO: add CMake requires compiler features/version etc.

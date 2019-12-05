@@ -12,7 +12,8 @@ class DictionaryStdSet
 {
 public:
 
-  wordsearch_solver::Result contains_and_further(std::string stem,
+  wordsearch_solver::Result contains_and_further(
+      const std::string& stem,
       const std::string& suffixes) const;
 
   DictionaryStdSet(const std::vector<std::string>& dict);

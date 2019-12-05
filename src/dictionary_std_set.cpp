@@ -9,7 +9,7 @@
 #include <type_traits>
 #include <vector>
 
-#include "jr_assert.h"
+#include "jr_assert/jr_assert.h"
 
 #include "wordsearch_solver_defs.h"
 
@@ -18,13 +18,15 @@ DictionaryStdSet::DictionaryStdSet(const std::vector<std::string>& dict)
 {}
 
 wordsearch_solver::Result DictionaryStdSet::contains_and_further(
-    std::string stem, const std::string& suffixes) const
+    const std::string& stem_in, const std::string& suffixes) const
 {
   wordsearch_solver::Result result;
+  auto stem = stem_in;
 
   // NOTE: found in benchmarking previous version that constructing a string for
   // stem each time was a noticable expense. Consider if this again is a
   // performance problem.
+
 
   for (auto i = 0ULL; i < suffixes.size(); ++i)
   {
