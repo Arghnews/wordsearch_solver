@@ -23,6 +23,12 @@ struct Result
   std::vector<std::size_t> contains;
   std::vector<std::size_t> further;
   std::vector<std::size_t> contains_and_further;
+  void clear()
+  {
+    contains.resize(0);
+    further.resize(0);
+    contains_and_further.resize(0);
+  }
 };
 
 }

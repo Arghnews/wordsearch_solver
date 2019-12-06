@@ -26,10 +26,12 @@ class Dictionary
     {
       std::cout << __PRETTY_FUNCTION__ << "\n";
     }
-    virtual Result do_contains_and_further(const std::string& stem,
-        const std::string& suffixes) const = 0;
-    // virtual bool do_contains(const std::string& key) const = 0;
-    // virtual bool do_contains_prefix(const std::string& prefix) const = 0;
+    virtual void do_contains_and_further(
+        const std::string& stem,
+        const std::string& suffixes,
+        wordsearch_solver::Result& result_out) const = 0;
+    virtual bool do_contains(const std::string& key) const = 0;
+    virtual bool do_further(const std::string& key) const = 0;
   };
   template <typename T>
   struct model_t : public concept_t
@@ -42,10 +44,22 @@ class Dictionary
       std::cout << __PRETTY_FUNCTION__ << "\n";
     }
 
-    Result do_contains_and_further(const std::string& stem,
-        const std::string& suffixes) const override
+    void do_contains_and_further(
+        const std::string& stem,
+        const std::string& suffixes,
+        wordsearch_solver::Result& result_out) const override
     {
-      return m_data.contains_and_further(stem, suffixes);
+      return m_data.contains_and_further(stem, suffixes, result_out);
+    }
+
+    bool do_contains(const std::string& key) const override
+    {
+      return m_data.contains(key);
+    }
+
+    bool do_further(const std::string& key) const override
+    {
+      return m_data.further(key);
     }
 
     T m_data;
@@ -76,10 +90,22 @@ public:
     return *this;
   }
 
-  Result contains_and_further(const std::string& stem, const std::string& suffixes)
-    const
+  bool contains(const std::string& key) const
   {
-    return m_impl->do_contains_and_further(stem, suffixes);
+    return m_impl->do_contains(key);
+  }
+
+  bool further(const std::string& key) const
+  {
+    return m_impl->do_further(key);
+  }
+
+  void contains_and_further(
+      const std::string& stem,
+      const std::string& suffixes,
+      wordsearch_solver::Result& result_out) const
+  {
+    return m_impl->do_contains_and_further(stem, suffixes, result_out);
   }
 
 private:

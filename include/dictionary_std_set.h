@@ -12,14 +12,16 @@ class DictionaryStdSet
 {
 public:
 
-  wordsearch_solver::Result contains_and_further(
+  void contains_and_further(
       const std::string& stem,
-      const std::string& suffixes) const;
+      const std::string& suffixes,
+      wordsearch_solver::Result& result_out) const;
 
   DictionaryStdSet(const std::vector<std::string>& dict);
-private:
+
   bool contains(const std::string& key) const;
-  bool contains_prefix(const std::string& prefix) const;
+  bool further(const std::string& key) const;
+private:
   std::set<std::string> dictionary_;
 };
 

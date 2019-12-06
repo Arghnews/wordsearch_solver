@@ -30,6 +30,8 @@ using namespace std::literals;
 #include "dictionary_std_set.h"
 #include "trie.h"
 
+#include <gperftools/profiler.h>
+
 // template <>
 // struct fmt::formatter<wordsearch_solver::StringIndex>
 // {
@@ -318,7 +320,11 @@ int main(int argc, char** argv)
   timer().start("Solve");
 
   // ProfilerEnable();
+  // ProfilerStart();
+  ProfilerStart("/home/justin/cpp/wordsearch_solvercp/profile.prof");
   const auto a = wordsearch_solver::solve(dict, wordsearch);
+  ProfilerStop();
+
   // ProfilerDisable();
   auto a1 = a.words();
   timer().stop();

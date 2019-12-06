@@ -20,8 +20,11 @@
 #include "jr_assert/jr_assert.h"
 #include "dictionary.h"
 
+#include <gperftools/profiler.h>
+
 // For now for debug
 #include "trie.h"
+#include "wordsearch_solver_defs.h"
 
 /* std::ostream& operator<<(std::ostream& os, const wordsearch_solver::Index& i) */
 /* { */
@@ -110,6 +113,55 @@ void surrounding(const std::size_t i, const std::size_t j,
   // {
     // result.pop_back();
   // }
+}
+
+// This bastard takes up 30%~ of find_words' time and therefore ~30% of program
+// time.
+template<class T1, class T2>
+void remove_from_first_if_in_second(
+    T1& next_indexes,
+    const T2& tail_indexes
+    )
+{
+    next_indexes.erase(std::remove_if(next_indexes.begin(), next_indexes.end(),
+        [&tail_indexes] (const auto& val)
+        {
+          return std::find(tail_indexes.begin(),
+              tail_indexes.end(), val) != tail_indexes.end();
+        }), next_indexes.end());
+}
+
+void result_inserts(
+    const Result& result,
+    const Indexes& suffixes,
+    StringIndexes& stringindexes,
+    const std::string& suffixes_str,
+    const Indexes& tail_indexes,
+    const std::string& tail_word,
+    Indexes& new_layer
+    )
+{
+    const auto concat = [] (std::vector<Index> indexes, const Index index)
+    {
+      indexes.push_back(index);
+      return indexes;
+    };
+
+    for (const auto i: result.contains)
+    {
+      stringindexes.insert(
+          {tail_word + suffixes_str[i], concat(tail_indexes, suffixes[i])});
+    }
+    for (const auto i: result.contains_and_further)
+    {
+      stringindexes.insert(
+          {tail_word + suffixes_str[i], concat(tail_indexes, suffixes[i])});
+      new_layer.emplace_back(suffixes[i]);
+    }
+    for (const auto i: result.further)
+    {
+      new_layer.emplace_back(suffixes[i]);
+    }
 }
 
 /* Sadly from looking at a call graph it seems that the std::string_view is not
@@ -258,6 +310,7 @@ StringIndexes find_words(
   //
   //
   //
+
   std::vector<std::string> found_words{};
   std::vector<std::vector<Index>> found_indexes{};
   std::vector<std::vector<Index>> a{};
@@ -276,6 +329,7 @@ StringIndexes find_words(
 
   std::vector<Index> new_layer;
 
+
 //  stringindexes.insert()
   // a.push_back({start});
   // tail_indexes.push_back({start});
@@ -285,38 +339,44 @@ StringIndexes find_words(
   // surrounding(start.first, start.second, grid, next_indexes);
   // const auto init_suffixes = next_indexes;
   // const std::string init_suffixes_str = indexes_to_word(grid, init_suffixes);
-  const std::vector<Index> init_suffixes = {start};
-  const auto init_suffixes_str = std::string{index_to_char(start)};
-  const wordsearch_solver::Result init_result = dictionary.contains_and_further(
-      "", {index_to_char(start)});
 
-  // Output words that satisfy contains, add those that satisfy further to the
-  // queue to be added next iteration
-  for (const auto i: init_result.contains)
   {
-    stringindexes.insert({std::string{init_suffixes_str[i]}, init_suffixes,
-        grid});
-  }
-  for (const auto i: init_result.contains_and_further)
-  {
-    stringindexes.insert({std::string{init_suffixes_str[i]}, init_suffixes,
-        grid});
-    new_layer.emplace_back(init_suffixes[i]);
-  }
-  for (const auto i: init_result.further)
-  {
-    new_layer.emplace_back(init_suffixes[i]);
+    const std::vector<Index> init_suffixes = {start};
+    const auto init_suffixes_str = std::string{index_to_char(start)};
+    wordsearch_solver::Result init_result;
+    dictionary.contains_and_further("", {index_to_char(start)}, init_result);
+
+    // Output words that satisfy contains, add those that satisfy further to the
+    // queue to be added next iteration
+    for (const auto i: init_result.contains)
+    {
+      stringindexes.insert({std::string{init_suffixes_str[i]}, init_suffixes,
+          grid});
+    }
+    for (const auto i: init_result.contains_and_further)
+    {
+      stringindexes.insert({std::string{init_suffixes_str[i]}, init_suffixes,
+          grid});
+      new_layer.emplace_back(init_suffixes[i]);
+    }
+    for (const auto i: init_result.further)
+    {
+      new_layer.emplace_back(init_suffixes[i]);
+    }
+
+    if (!new_layer.empty())
+    {
+      // spdlog::debug/("Adding new layer of letters {}", indexes_to_word(grid,
+  //            new_layer));
+      tail_indexes.push_back(new_layer[0]);
+      tail_word.push_back(index_to_char(new_layer[0]));
+      a.emplace_back(std::move(new_layer));
+    }
   }
 
-  if (!new_layer.empty())
-  {
-    // spdlog::debug/("Adding new layer of letters {}", indexes_to_word(grid,
-//            new_layer));
-    tail_indexes.push_back(new_layer[0]);
-    tail_word.push_back(index_to_char(new_layer[0]));
-    a.emplace_back(std::move(new_layer));
-  }
+  ProfilerEnable();
 
+  wordsearch_solver::Result result;
 
   while (!a.empty())
   {
@@ -332,44 +392,70 @@ StringIndexes find_words(
     // spdlog::debug/("Surrouding are {} {}", next_indexes, indexes_to_word(grid, next_indexes));
 
     /* Remove surrounding indexes that would bite tail_indexes */
-    next_indexes.erase(std::remove_if(next_indexes.begin(), next_indexes.end(),
-        [&tail_indexes] (const auto& val)
-        {
-          return std::find(tail_indexes.begin(),
-              tail_indexes.end(), val) != tail_indexes.end();
-        }), next_indexes.end());
+    remove_from_first_if_in_second(next_indexes, tail_indexes);
+    // next_indexes.erase(std::remove_if(next_indexes.begin(), next_indexes.end(),
+        // [&tail_indexes] (const auto& val)
+        // {
+          // return std::find(tail_indexes.begin(),
+              // tail_indexes.end(), val) != tail_indexes.end();
+        // }), next_indexes.end());
     // spdlog::debug/("Surrouding are now {}", next_indexes);
 
     /* Remove surrounding indexes if would not ever form word */
 
-    const auto suffixes = next_indexes;
+    const auto& suffixes = next_indexes;
     const std::string suffixes_str = indexes_to_word(grid, suffixes);
 
-    const wordsearch_solver::Result result = dictionary.contains_and_further(
-        tail_word, suffixes_str);
+    // const auto concat = [] (std::vector<Index> indexes, const Index index)
+    // {
+      // indexes.push_back(index);
+      // return indexes;
+    // };
 
+    // tail_word.push_back('\0');
+    // for (const auto index: next_indexes)
+    // {
+      // tail_word.back() = index_to_char(index);
+      // if (dictionary.contains(tail_word))
+      // {
+        // stringindexes.insert({tail_word, concat(tail_indexes, index)});
+      // }
+      // if (dictionary.further(tail_word))
+      // {
+        // new_layer.emplace_back(index);
+      // }
+      // // dictionary.contains(
+    // }
+    // tail_word.pop_back();
+
+    dictionary.contains_and_further(tail_word, suffixes_str, result);
+
+    result_inserts(
+        result,
+        suffixes,
+        stringindexes,
+        suffixes_str,
+        tail_indexes,
+        tail_word,
+        new_layer);
     // Output words that satisfy contains, add those that satisfy further to the
     // queue to be added next iteration
-    const auto concat = [] (std::vector<Index> indexes, const Index index)
-    {
-      indexes.push_back(index);
-      return indexes;
-    };
-    for (const auto i: result.contains)
-    {
-      stringindexes.insert(
-          {tail_word + suffixes_str[i], concat(tail_indexes, suffixes[i])});
-    }
-    for (const auto i: result.contains_and_further)
-    {
-      stringindexes.insert(
-          {tail_word + suffixes_str[i], concat(tail_indexes, suffixes[i])});
-      new_layer.emplace_back(suffixes[i]);
-    }
-    for (const auto i: result.further)
-    {
-      new_layer.emplace_back(suffixes[i]);
-    }
+    // for (const auto i: result.contains)
+    // {
+      // stringindexes.insert(
+          // {tail_word + suffixes_str[i], concat(tail_indexes, suffixes[i])});
+    // }
+    // for (const auto i: result.contains_and_further)
+    // {
+      // stringindexes.insert(
+          // {tail_word + suffixes_str[i], concat(tail_indexes, suffixes[i])});
+      // new_layer.emplace_back(suffixes[i]);
+    // }
+    // for (const auto i: result.further)
+    // {
+      // new_layer.emplace_back(suffixes[i]);
+    // }
+    result.clear();
 
     if (!new_layer.empty())
     {
@@ -416,6 +502,7 @@ StringIndexes find_words(
   }
 
 //  return {found_words, found_indexes};
+  ProfilerDisable();
   return stringindexes;
 }
 

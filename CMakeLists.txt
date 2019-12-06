@@ -26,8 +26,6 @@ find_package(Catch2 REQUIRED)
 find_package(Boost 1.70.0 REQUIRED) # COMPONENTS container)
 find_package(jr_assert REQUIRED)
 
-add_subdirectory(trie)
-
 # https://blog.kitware.com/cmake-and-the-default-build-type/
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(default_build_type "DEBUG")
@@ -58,10 +56,11 @@ string(CONCAT COMPILER_FLAGS "-Wall -Wextra -pedantic -Wfloat-equal "
 #  -fno-inline-functions
 
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fno-inline-functions ${COMPILER_FLAGS}")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -fno-omit-frame-pointer -march=native -fno-inline-functions ${COMPILER_FLAGS}")
-set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O2 -march=native ${COMPILER_FLAGS}")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -fno-inline-functions -fno-omit-frame-pointer -march=native ${COMPILER_FLAGS}")
+# set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DNDEBUG -O3 -march=native ${COMPILER_FLAGS}")
+set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3 -march=native ${COMPILER_FLAGS}")
 
-# set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-fsanitize=address,undefined")
+set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-fsanitize=address,undefined")
 # set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-fsanitize=address,undefined")
 # set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-fsanitize=memory -fsanitize-memory-track-origins")
 # set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-fsanitize=address,undefined -fsanitize=memory -fsanitize-memory-track-origins")
@@ -71,6 +70,19 @@ set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O2 -march=native ${COMPILER_FLAGS}")
 #set(CMAKE_EXE_LINKER_FLAGS
 #  "-fuse-ld=lld -fsanitize=address,undefined ${CMAKE_EXE_LINKER_FLAGS}"
 #  )
+
+#target_compile_options(${PROJECT_NAME}_main
+#    PRIVATE "-Werror=shadow")
+add_library(profiler INTERFACE IMPORTED GLOBAL)
+# target_link_options(profiler BEFORE INTERFACE "-Wl,--no-as-needed" "/usr/local/lib/libprofiler.so")
+target_link_options(profiler BEFORE INTERFACE "LINKER:--no-as-needed,/usr/local/lib/libprofiler.so")
+# Don't believe necessary, more for consistency
+add_library(profiler::profiler ALIAS profiler)
+
+#add_library(profiler SHARED IMPORTED GLOBAL)
+#set_target_properties(profiler PROPERTIES IMPORTED_LOCATION /usr/local/lib/libprofiler.so)
+## Not necesaary but nice for consistency
+#add_library(profiler::profiler ALIAS profiler)
 
 # add_library(${PROJECT_NAME} src/wordsearch_solver.cpp include/wordsearch_solver.h)
 add_library(${PROJECT_NAME}
@@ -100,7 +112,7 @@ target_compile_options(${PROJECT_NAME}
     # PRIVATE "-Werror=shadow" "-Weffc++")
 target_link_libraries(${PROJECT_NAME}
     PRIVATE jr_assert::jr_assert
-    PUBLIC -lstdc++fs trie_wrapper::trie_wrapper fmt::fmt
+    PUBLIC profiler::profiler -lstdc++fs trie::trie fmt::fmt
   )
 #target_link_options(${PROJECT_NAME} BEFORE
 #  PRIVATE "-fsanitize=address,undefined")
@@ -112,24 +124,12 @@ target_include_directories(${PROJECT_NAME}
   PUBLIC ${PROJECT_SOURCE_DIR}/include)
 #    PRIVATE ${PROJECT_SOURCE_DIR}/src) # Internal headers?
 
+add_subdirectory(trie)
 
 # Argument parser
 add_subdirectory(Lyra)
 
 add_executable(${PROJECT_NAME}_main src/main.cpp)
-
-#target_compile_options(${PROJECT_NAME}_main
-#    PRIVATE "-Werror=shadow")
-add_library(profiler INTERFACE IMPORTED GLOBAL)
-# target_link_options(profiler BEFORE INTERFACE "-Wl,--no-as-needed" "/usr/local/lib/libprofiler.so")
-target_link_options(profiler BEFORE INTERFACE "LINKER:--no-as-needed,/usr/local/lib/libprofiler.so")
-# Don't believe necessary, more for consistency
-add_library(profiler::profiler ALIAS profiler)
-
-#add_library(profiler SHARED IMPORTED GLOBAL)
-#set_target_properties(profiler PROPERTIES IMPORTED_LOCATION /usr/local/lib/libprofiler.so)
-## Not necesaary but nice for consistency
-#add_library(profiler::profiler ALIAS profiler)
 
 target_link_libraries(${PROJECT_NAME}_main
   profiler::profiler
@@ -149,8 +149,8 @@ add_subdirectory(test)
 
 # message("
 #     copy ${CMAKE_BINARY_DIR}/compile_commands.json ${PROJECT_SOURCE_DIR}")
-add_custom_target(after_all_built ALL)
-add_custom_command(TARGET after_all_built POST_BUILD
+add_custom_target(${PROJECT_NAME}_after_all_built ALL)
+add_custom_command(TARGET ${PROJECT_NAME}_after_all_built POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E
     copy "${CMAKE_BINARY_DIR}/compile_commands.json" "${PROJECT_SOURCE_DIR}"
 	)

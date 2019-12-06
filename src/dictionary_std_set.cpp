@@ -17,10 +17,12 @@ DictionaryStdSet::DictionaryStdSet(const std::vector<std::string>& dict)
   : dictionary_(dict.begin(), dict.end())
 {}
 
-wordsearch_solver::Result DictionaryStdSet::contains_and_further(
-    const std::string& stem_in, const std::string& suffixes) const
+void DictionaryStdSet::contains_and_further(
+    const std::string& stem_in,
+    const std::string& suffixes,
+    wordsearch_solver::Result& result_out) const
 {
-  wordsearch_solver::Result result;
+  // wordsearch_solver::Result result;
   auto stem = stem_in;
 
   // NOTE: found in benchmarking previous version that constructing a string for
@@ -38,21 +40,21 @@ wordsearch_solver::Result DictionaryStdSet::contains_and_further(
     // Maybe change this to bitset after or something anyway rather than fat
     // heap vectors
     const auto contains = this->contains(stem);
-    const auto further = this->contains_prefix(stem);
+    const auto further = this->further(stem);
     if (contains && further)
     {
-      result.contains_and_further.push_back(i);
+      result_out.contains_and_further.push_back(i);
     } else if (contains)
     {
-      result.contains.push_back(i);
+      result_out.contains.push_back(i);
     } else if (further)
     {
-      result.further.push_back(i);
+      result_out.further.push_back(i);
     }
 
     stem.pop_back();
   }
-  return result;
+  // return result_out;
 }
 
 // no inline only here for benchmarking, remove in release?
@@ -64,7 +66,7 @@ DictionaryStdSet::contains(const std::string& key) const
 }
 
 __attribute__((__noinline__))
-bool DictionaryStdSet::contains_prefix(const std::string& prefix) const
+bool DictionaryStdSet::further(const std::string& prefix) const
 {
   const auto it = dictionary_.lower_bound(prefix);
   if (it == dictionary_.end()) return false;
