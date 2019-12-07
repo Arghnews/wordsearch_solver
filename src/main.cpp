@@ -28,6 +28,7 @@ using namespace std::literals;
 #include "dictionary.h"
 
 #include "dictionary_std_set.h"
+#include "dictionary_std_vector.h"
 #include "trie.h"
 
 #include <gperftools/profiler.h>
@@ -217,8 +218,9 @@ int main(int argc, char** argv)
     // ["-m"]["--min-length"] ("Only print words longer than this")
     |
     lyra::opt(args.backend, "Backend")
-    ["-b"]["--backend"] ("Which backend solver to use for dict [stdset, trie]")
-    .choices("stdset", "trie").required()
+    ["-b"]["--backend"] ("Which backend solver to use for dict "
+        "[stdset, trie, stdvector]")
+    .choices("stdset", "trie", "stdvector").required()
     ;
 
   auto result = cli.parse({argc, argv});
@@ -296,6 +298,9 @@ int main(int argc, char** argv)
   if (args.backend == "stdset")
   {
     return wordsearch_solver::Dictionary{DictionaryStdSet(vec)};
+  } else if (args.backend == "stdvector")
+  {
+    return wordsearch_solver::Dictionary{DictionaryStdVector(vec)};
   } else if (args.backend == "trie")
   {
     return wordsearch_solver::Dictionary{TrieWrapper(vec)};

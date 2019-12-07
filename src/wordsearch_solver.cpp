@@ -391,6 +391,9 @@ StringIndexes find_words(
     surrounding(last.first, last.second, grid, next_indexes);
     // spdlog::debug/("Surrouding are {} {}", next_indexes, indexes_to_word(grid, next_indexes));
 
+    // SORT the suffixes but have to map back to indexes
+    // Hmmm
+
     /* Remove surrounding indexes that would bite tail_indexes */
     remove_from_first_if_in_second(next_indexes, tail_indexes);
     // next_indexes.erase(std::remove_if(next_indexes.begin(), next_indexes.end(),

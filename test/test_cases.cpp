@@ -11,6 +11,7 @@
 
 #include "dictionary.h"
 #include "dictionary_std_set.h"
+#include "dictionary_std_vector.h"
 #include "trie.h"
 
 using namespace std::literals;
@@ -93,7 +94,8 @@ TEST_CASE( "Check test inputs", "[input]")
 }
 
 TEMPLATE_TEST_CASE( "Test wordsearch/dict implementations", "[test]",
-    DictionaryStdSet, TrieWrapper)
+    DictionaryStdSet, TrieWrapper, DictionaryStdVector)
+    // TrieWrapper)
     // DictionaryStdSet)
 {
   const auto dictionary_path = test_cases_dirname / dictionary_filename;
@@ -112,6 +114,36 @@ TEMPLATE_TEST_CASE( "Test wordsearch/dict implementations", "[test]",
         test_dir / wordsearch_filename);
     const auto stringindexes = wordsearch_solver::solve(dict, grid);
     const auto results = sort_unique(stringindexes.words());
+    const auto contains = [] (const auto& haystack, const auto& needle)
+    {
+      return std::binary_search(haystack.begin(), haystack.end(), needle);
+    };
+    const auto print_iter = [](const auto& container, const auto it)
+    {
+      if (it != container.end())
+      {
+        return *it;
+      }
+      return std::string{"[end_iterator]"};
+    };
+    for (const auto& answer: answers)
+    {
+      const auto present = contains(results, answer);
+      if (!present)
+      {
+        auto first = std::lower_bound(results.begin(), results.end(), answer);
+        auto second = first != results.end() ? std::next(first) : results.end();
+        if (first != results.begin() && *first > answer)
+        {
+          --first;
+          --second;
+        }
+        FAIL_CHECK("Answer: \"" << answer << "\" missing from results. "
+            "Values at positions that answer should be - before: \""
+            << print_iter(results, first) << "\", and after: \""
+            << print_iter(results, second) << "\"");
+      }
+    }
     CHECK(std::includes(results.begin(), results.end(),
           answers.begin(), answers.end()));
   }

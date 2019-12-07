@@ -1,7 +1,6 @@
 #ifndef DICTIONARY_STD_SET_H
 #define DICTIONARY_STD_SET_H
 
-#include <filesystem>
 #include <set>
 #include <string>
 #include <vector>

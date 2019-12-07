@@ -41,6 +41,10 @@ void DictionaryStdSet::contains_and_further(
     // heap vectors
     const auto contains = this->contains(stem);
     const auto further = this->further(stem);
+    // if (contains)
+    // {
+      // assert(further);
+    // }
     if (contains && further)
     {
       result_out.contains_and_further.push_back(i);
@@ -58,17 +62,17 @@ void DictionaryStdSet::contains_and_further(
 }
 
 // no inline only here for benchmarking, remove in release?
-__attribute__((__noinline__))
+// __attribute__((__noinline__))
 bool
 DictionaryStdSet::contains(const std::string& key) const
 {
   return dictionary_.find(key) != dictionary_.end();
 }
 
-__attribute__((__noinline__))
+// __attribute__((__noinline__))
 bool DictionaryStdSet::further(const std::string& prefix) const
 {
-  const auto it = dictionary_.lower_bound(prefix);
+  const auto it = dictionary_.upper_bound(prefix);
   if (it == dictionary_.end()) return false;
 
   // Compare substrings (of whichever is shortest length) for equality

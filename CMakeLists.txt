@@ -90,12 +90,14 @@ add_library(${PROJECT_NAME}
   src/stringindexes.cpp
   src/wordsearch_solver.cpp
   src/dictionary_std_set.cpp
+  src/dictionary_std_vector.cpp
 
   include/dictionary.h
   include/stringindexes.h
   include/wordsearch_solver.h
   include/wordsearch_solver_defs.h
   include/dictionary_std_set.h
+  include/dictionary_std_vector.h
   )
 
 # Using this to set files for IDE
