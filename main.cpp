@@ -14,19 +14,27 @@
 #include <vector>
 
 #include "prettyprint.hpp"
-#include "trie.h"
 #include <fmt/format.h>
 #include <fmt/ostream.h>
-#include "jr_assert.h"
+#include "jr_assert/jr_assert.h"
+#include "trie.h"
+// /usr/local/jr_assert/include/jr_assert.h
 
 using namespace std::literals;
 
 int main()
 {
+  using namespace trie;
 
   {
     Trie t{};
     t.insert("lapland");
+
+    // (!t.contains("lap"));
+    // (!t.contains("laplan"));
+    // (t.contains("lapland"));
+    // fmt::print("DONE\n");
+    // return 0;
 
     JR_ASSERT(t.size() == 1);
     JR_ASSERT(!t.contains("lap"));
@@ -76,7 +84,7 @@ int main()
     {
       w.push_back(c);
       bool has = t.contains(w);
-      bool has_prefix = t.contains_prefix(w);
+      bool has_prefix = t.further(w);
       fmt::print("Word: {:{}}, trie has {}: has prefix:{}\n", w,
           haystack.size(), has ? u8"✓ " : u8"❌", has_prefix ? u8"✓ " : u8"❌");
     }
@@ -94,7 +102,7 @@ int main()
     for (const auto [substring, contains_answer, contains_prefix_answer]: v)
     {
       JR_ASSERT(t.contains(substring) == contains_answer);
-      JR_ASSERT(t.contains_prefix(substring) == contains_prefix_answer,
+      JR_ASSERT(t.further(substring) == contains_prefix_answer,
           "substring: {}, expected: {} {}", substring, contains_answer,
           contains_prefix_answer);
     }
@@ -156,8 +164,8 @@ int main()
     const Trie t{w.begin(), w.end()};
     const auto v = t.as_vector();
     JR_ASSERT(std::equal(w.begin(), w.end(), v.begin(), v.end()));
-    JR_ASSERT(!t.contains_prefix("y"));
-    JR_ASSERT(!t.contains_prefix("yq"));
+    JR_ASSERT(!t.further("y"));
+    JR_ASSERT(!t.further("yq"));
   }
 
   {
@@ -210,17 +218,57 @@ int main()
           "Error in test setup, {} not in vector", s);
       return s;
     };
-    auto result = t.contains_and_further(str("ahe"), "amz");
-    JR_ASSERT(result.contains.size() == 1 && result.contains.at(0) == 1);
-    JR_ASSERT(result.further.size() == 1);
-    JR_ASSERT(result.contains_and_further.size() == 0);
+    {
+      trie::ResultType result;
+      t.contains_and_further(str("ahe"), "amz", result);
+      JR_ASSERT(result.contains.size() == 1 && result.contains.at(0) == 1);
+      JR_ASSERT(result.further.size() == 1);
+      JR_ASSERT(result.contains_and_further.size() == 0);
+    }
 
-    auto result2 = t.contains_and_further("bur", "amzn");
-    JR_ASSERT(result2.contains.size() == 0);
-    JR_ASSERT(result2.further.size() == 0);
-    JR_ASSERT(result2.contains_and_further.size() == 1);
-    JR_ASSERT(result2.contains_and_further.at(0) == 3);
+    {
+      trie::ResultType result;
+      t.contains_and_further("bur", "amzn", result);
+      JR_ASSERT(result.contains.size() == 0);
+      JR_ASSERT(result.further.size() == 0);
+      JR_ASSERT(result.contains_and_further.size() == 1);
+      JR_ASSERT(result.contains_and_further.at(0) == 3);
+    }
   }
 
-}
+  {
+    const std::set<std::string> w{"hi", "there", "chum"};
+    Trie t_orig{w.begin(), w.end()};
+    fmt::print("Move cons\n");
+    const auto t{std::move(t_orig)};
+    const auto v = t.as_vector();
+    JR_ASSERT(std::equal(w.begin(), w.end(), v.begin(), v.end()));
+    JR_ASSERT(!t.further("y"));
+    JR_ASSERT(!t.further("yq"));
+  }
 
+  {
+    fmt::print("Start of wadoogey\n");
+    std::vector<std::string> w =
+    {
+      "a"        ,
+      "ac"       ,
+      "act"      ,
+      "acti"     ,
+      "activ"    ,
+      "activa"   ,
+      "activat"  ,
+      "activate" ,
+      "activates",
+    };
+    Trie t{w};
+    for (auto word: w)
+    {
+      JR_ASSERT(t.contains(word));
+    }
+    JR_ASSERT(t.size() == 9);
+    fmt::print("End of wadoogey\n");
+  }
+
+  fmt::print("Done, exiting main!\n");
+}
