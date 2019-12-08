@@ -28,6 +28,7 @@ DictionaryStdVector::DictionaryStdVector(const std::vector<std::string>& dict)
 
   // for (auto i = 0ULL; i < dict.size(); ++i)
   // std::vector<std::string>
+
   for (auto i = dict.size(); i-- > 0;)
   {
     const auto& word = dict[i];
@@ -86,6 +87,7 @@ void DictionaryStdVector::contains_and_further(
 
     // TODO: replace using std::partition_point to look from there every time?
     auto first = std::lower_bound(it, to, stem);
+    // auto first = std::find(it, to, stem);
 
     if (first == to)
     {
@@ -93,6 +95,8 @@ void DictionaryStdVector::contains_and_further(
     }
 
     const auto contains = *first == stem;
+    // const auto contains = true;
+
     // const auto contains2 = this->contains(stem);
     // JR_ASSERT(contains == contains2);
     // JR_ASSERT(contains == this->contains(stem),

@@ -11,10 +11,10 @@ target_link_libraries(the_test
   wordsearch_solver::wordsearch_solver
   Catch2::Catch2)
 
-message("CMAKE_CURRENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}")
-message("CMAKE_CURRENT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}")
-message("CMAKE_SOURCE_DIR ${CMAKE_SOURCE_DIR}")
-message("PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR}")
+# message("CMAKE_CURRENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}")
+# message("CMAKE_CURRENT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}")
+# message("CMAKE_SOURCE_DIR ${CMAKE_SOURCE_DIR}")
+# message("PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR}")
 # message("
 # 	copy ${PROJECT_SOURCE_DIR}/dictionary_gb.txt ${CMAKE_BINARY_DIR}")
 

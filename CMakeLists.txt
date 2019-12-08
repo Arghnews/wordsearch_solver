@@ -23,8 +23,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 find_package(fmt REQUIRED)
 # find_package(spdlog REQUIRED)
 find_package(Catch2 REQUIRED)
-find_package(Boost 1.70.0 REQUIRED) # COMPONENTS container)
+find_package(Boost 1.70.0 REQUIRED QUIET) # COMPONENTS container)
 find_package(jr_assert REQUIRED)
+find_package(span-lite 0.6.0 REQUIRED)
 
 # https://blog.kitware.com/cmake-and-the-default-build-type/
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -114,13 +115,13 @@ target_compile_options(${PROJECT_NAME}
     # PRIVATE "-Werror=shadow" "-Weffc++")
 target_link_libraries(${PROJECT_NAME}
     PRIVATE jr_assert::jr_assert
-    PUBLIC profiler::profiler -lstdc++fs trie::trie fmt::fmt
+    PUBLIC profiler::profiler -lstdc++fs nonstd::span-lite trie::trie fmt::fmt
   )
 #target_link_options(${PROJECT_NAME} BEFORE
 #  PRIVATE "-fsanitize=address,undefined")
 add_library(wordsearch_solver::wordsearch_solver ALIAS ${PROJECT_NAME})
 
-message("in word_trie_lib PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR}")
+# message("in word_trie_lib PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR}")
 
 target_include_directories(${PROJECT_NAME}
   PUBLIC ${PROJECT_SOURCE_DIR}/include)

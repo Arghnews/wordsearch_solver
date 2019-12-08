@@ -1,6 +1,7 @@
 #include "wordsearch_solver.h"
 
 #include <algorithm>
+#include <array>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -21,6 +22,7 @@
 #include "dictionary.h"
 
 #include <gperftools/profiler.h>
+#include "nonstd/span.hpp"
 
 // For now for debug
 #include "trie.h"
@@ -56,15 +58,22 @@ using namespace wordsearch_solver;
 
 // Output parameters make me sad but returning a vector by value and the ensuing
 // copying was slow
-void surrounding(const std::size_t i, const std::size_t j,
-    const Grid& gridp, std::vector<Index>& result)
+nonstd::span<Index, nonstd::dynamic_extent>
+surrounding(
+    const std::size_t i, const std::size_t j, const Grid& gridp,
+    nonstd::span<Index, 8> result)
+    // const std::array<Index, 8>& arr)
 {
   const auto& grid = *gridp;
+  // std::array<Index, 1> arr = {{ {0, 0} }};
+  // Is this shit even legal?
+  // nonstd::span<Index, 8> result{arr};
+  // nonstd::span<Index> result;
+  // result[0] = {1, 1};
+  // result[2] = {1, 1};
+  // return result.first(3);
   /* assert(i <= i_size); */
   /* assert(j <= j_size); */
-
-  /* boost::container::small_vector<Index, 8> result; */
-  /* result.reserve(8); */
 
   /* {i, j + 1}, // E */
   /* {i + 1, j + 1}, // SE */
@@ -77,15 +86,17 @@ void surrounding(const std::size_t i, const std::size_t j,
   /* {i - 1, j} // N */
   /* {i - 1, j + 1} // NE */
 
-  const auto possible_directions = 8ULL;
-  result.resize(possible_directions);
+  // JR_ASSERT(
+  // const auto possible_directions = 8ULL;
+  // result.resize(possible_directions);
+  std::size_t result_size = 0;
   auto last_result = result.begin();
-  const auto insert_if_valid = [&last_result, &grid]
+  const auto insert_if_valid = [&last_result, &grid, &result_size]
     (const auto i_, const auto j_)
     {
       // Could use limits max type, this works for signed too, for now size_t
       // anyway
-      const std::size_t lower_lim = -1UL;
+      const std::size_t lower_lim = -1ULL;
       if (i_ != lower_lim && j_ != lower_lim && i_ < grid.size() &&
           j_ < grid[i_].size())
       /* i < grid.size() && j < grid.at(i).size()) */
@@ -93,6 +104,7 @@ void surrounding(const std::size_t i, const std::size_t j,
         last_result->first = i_;
         last_result->second = j_;
         ++last_result;
+        ++result_size;
       }
   };
 
@@ -107,8 +119,9 @@ void surrounding(const std::size_t i, const std::size_t j,
   insert_if_valid(i - 1, j);
   insert_if_valid(i - 1, j + 1);
 
-  result.resize(
-      static_cast<std::size_t>(std::distance(result.begin(), last_result)));
+  return result.first(result_size);
+  // result.resize(
+      // static_cast<std::size_t>(std::distance(result.begin(), last_result)));
   // for (auto c = std::distance(last_result, result.end()); c > 0; --c)
   // {
     // result.pop_back();
@@ -118,22 +131,32 @@ void surrounding(const std::size_t i, const std::size_t j,
 // This bastard takes up 30%~ of find_words' time and therefore ~30% of program
 // time.
 template<class T1, class T2>
-void remove_from_first_if_in_second(
-    T1& next_indexes,
+// __attribute__((__noinline__))
+nonstd::span<Index, nonstd::dynamic_extent> remove_from_first_if_in_second(
+    const T1 next_indexes,
     const T2& tail_indexes
     )
 {
-    next_indexes.erase(std::remove_if(next_indexes.begin(), next_indexes.end(),
+    const auto it = std::remove_if(next_indexes.begin(), next_indexes.end(),
         [&tail_indexes] (const auto& val)
         {
           return std::find(tail_indexes.begin(),
               tail_indexes.end(), val) != tail_indexes.end();
-        }), next_indexes.end());
+        });
+    return next_indexes.first(static_cast<std::size_t>(std::distance(
+            next_indexes.begin(), it)));
+    // next_indexes.erase(std::remove_if(next_indexes.begin(), next_indexes.end(),
+        // [&tail_indexes] (const auto& val)
+        // {
+          // return std::find(tail_indexes.begin(),
+              // tail_indexes.end(), val) != tail_indexes.end();
+        // }), next_indexes.end());
 }
 
 void result_inserts(
     const Result& result,
-    const Indexes& suffixes,
+    // const Indexes& suffixes,
+    const nonstd::span<Index, nonstd::dynamic_extent> suffixes,
     StringIndexes& stringindexes,
     const std::string& suffixes_str,
     const Indexes& tail_indexes,
@@ -209,7 +232,9 @@ void result_inserts(
 namespace wordsearch_solver
 {
 
-std::string indexes_to_word(const Grid& grid, const Indexes& tail)
+// std::string indexes_to_word(const Grid& grid, const Indexes& tail)
+std::string indexes_to_word(const Grid& grid,
+    const nonstd::span<Index, nonstd::dynamic_extent> tail)
 {
   std::string word;
   word.reserve(tail.size());
@@ -314,7 +339,7 @@ StringIndexes find_words(
   std::vector<std::string> found_words{};
   std::vector<std::vector<Index>> found_indexes{};
   std::vector<std::vector<Index>> a{};
-  std::vector<Index> next_indexes{};
+  std::array<Index, 8> next_indexes{};
 
   std::vector<Index> tail_indexes{};
   std::string tail_word{};
@@ -388,14 +413,20 @@ StringIndexes find_words(
     // spdlog::debug/("Tail is {}", tail_word);
     // spdlog::debug/("At position {} {}", last, index_to_char(last));
 
-    surrounding(last.first, last.second, grid, next_indexes);
+    // Have put in template args for now as want to experiment/ensure that
+    // static extent is used, see if it brings any benefit/downside
+    auto valid_surrounding_indexes = surrounding(last.first, last.second, grid,
+          nonstd::span<Index, 8>(next_indexes));
+
     // spdlog::debug/("Surrouding are {} {}", next_indexes, indexes_to_word(grid, next_indexes));
 
     // SORT the suffixes but have to map back to indexes
     // Hmmm
 
     /* Remove surrounding indexes that would bite tail_indexes */
-    remove_from_first_if_in_second(next_indexes, tail_indexes);
+    // nonstd::span<Index, nonstd::dynamic_extent> next_indexes_span
+    valid_surrounding_indexes = remove_from_first_if_in_second(
+        valid_surrounding_indexes, tail_indexes);
     // next_indexes.erase(std::remove_if(next_indexes.begin(), next_indexes.end(),
         // [&tail_indexes] (const auto& val)
         // {
@@ -406,7 +437,7 @@ StringIndexes find_words(
 
     /* Remove surrounding indexes if would not ever form word */
 
-    const auto& suffixes = next_indexes;
+    const auto& suffixes = valid_surrounding_indexes;
     const std::string suffixes_str = indexes_to_word(grid, suffixes);
 
     // const auto concat = [] (std::vector<Index> indexes, const Index index)

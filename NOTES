@@ -6,3 +6,8 @@ tldr: Make sure in building static spdlog (default) and shared fmt (default) to 
 
 
 Could change contains_and_further string param to mutable ref as we only change it then reset it back - saves a copy.
+Change surrouding to pass an index to latest, save all the vector movement shenanigans which is a large portion of program runtime
+
+Index by size, index by first letter, vector sorted by lexicographic
+Index by first letter, index by size, vector sorted by lexicographic
+

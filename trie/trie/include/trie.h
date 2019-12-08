@@ -129,9 +129,9 @@ struct TrieImpl
 // that owns this doesn't work nicely. Fix/think about this
 struct Cache
 {
-  const TrieImpl *tp_;
+  const TrieImpl* tp_;
   mutable std::string cached_str_;
-  mutable std::vector<const TrieImpl *> cached_ptrs_;
+  mutable std::vector<const TrieImpl*> cached_ptrs_;
   mutable std::size_t hits = 0;
   mutable std::size_t misses = 0;
 
