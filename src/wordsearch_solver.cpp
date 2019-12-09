@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <filesystem>
+#include <fmt/core.h>
 #include <fstream>
 #include <iterator>
 #include <memory>
@@ -28,10 +29,9 @@
 #include "trie.h"
 #include "wordsearch_solver_defs.h"
 
-/* std::ostream& operator<<(std::ostream& os, const wordsearch_solver::Index& i) */
-/* { */
-/*   return os << "{" << i.first << ", " << i.second << "}"; */
-/* } */
+// #define //PRINT fmt::print
+// #define //PRINT(...)
+// #define //PRINT //
 
 /* template<class T1, class T2> */
 /* std::ostream& operator<<(std::ostream& os, const std::pair<T1, T2>& i) */
@@ -65,28 +65,7 @@ surrounding(
     // const std::array<Index, 8>& arr)
 {
   const auto& grid = *gridp;
-  // std::array<Index, 1> arr = {{ {0, 0} }};
-  // Is this shit even legal?
-  // nonstd::span<Index, 8> result{arr};
-  // nonstd::span<Index> result;
-  // result[0] = {1, 1};
-  // result[2] = {1, 1};
-  // return result.first(3);
-  /* assert(i <= i_size); */
-  /* assert(j <= j_size); */
 
-  /* {i, j + 1}, // E */
-  /* {i + 1, j + 1}, // SE */
-  /* {i + 1, j} // S */
-
-  /* {i + 1, j - 1} // SW */
-  /* {i, j - 1} // W */
-  /* {i - 1, j - 1} // NW */
-
-  /* {i - 1, j} // N */
-  /* {i - 1, j + 1} // NE */
-
-  // JR_ASSERT(
   // const auto possible_directions = 8ULL;
   // result.resize(possible_directions);
   std::size_t result_size = 0;
@@ -108,16 +87,28 @@ surrounding(
       }
   };
 
-  insert_if_valid(i, j + 1);
-  insert_if_valid(i + 1, j + 1);
-  insert_if_valid(i + 1, j);
+  // Now arranged so they will be sorted as pairs
+  /* {i - 1, j - 1} // NW */
+  /* {i - 1, j} // N */
+  /* {i - 1, j + 1} // NE */
 
-  insert_if_valid(i + 1, j - 1);
-  insert_if_valid(i, j - 1);
+  /* {i, j - 1} // W */
+  /* {i, j + 1}, // E */
+
+  /* {i + 1, j - 1} // SW */
+  /* {i + 1, j} // S */
+  /* {i + 1, j + 1}, // SE */
+
   insert_if_valid(i - 1, j - 1);
-
   insert_if_valid(i - 1, j);
   insert_if_valid(i - 1, j + 1);
+
+  insert_if_valid(i, j - 1);
+  insert_if_valid(i, j + 1);
+
+  insert_if_valid(i + 1, j - 1);
+  insert_if_valid(i + 1, j);
+  insert_if_valid(i + 1, j + 1);
 
   return result.first(result_size);
   // result.resize(
@@ -128,29 +119,97 @@ surrounding(
   // }
 }
 
-// This bastard takes up 30%~ of find_words' time and therefore ~30% of program
-// time.
-template<class T1, class T2>
-// __attribute__((__noinline__))
-nonstd::span<Index, nonstd::dynamic_extent> remove_from_first_if_in_second(
-    const T1 next_indexes,
-    const T2& tail_indexes
+template<class It1, class It2>
+constexpr bool contains_no_duplicates(It1 it1, It2 it2)
+{
+  return std::adjacent_find(it1, it2) == it2;
+}
+
+template<class Container>
+constexpr bool contains_no_duplicates(Container& c)
+{
+  // Heavyweight but meh
+  std::vector<typename Container::value_type> cont(
+      std::begin(c), std::end(c));
+  std::sort(cont.begin(), cont.end());
+  return contains_no_duplicates(cont.begin(), cont.end());
+}
+
+// As the name says. Finds the set difference - what is in the second range that
+// is not in the first - and writes it into the second range. Both ranges must
+// be sorted and contain no duplicates.
+template<class Iter1, class Iter2>
+Iter2 remove_from_second_if_in_first(
+    Iter1 ti,
+    const Iter1 ti_end,
+    Iter2 ni,
+    const Iter2 ni_end
     )
 {
-    const auto it = std::remove_if(next_indexes.begin(), next_indexes.end(),
-        [&tail_indexes] (const auto& val)
-        {
-          return std::find(tail_indexes.begin(),
-              tail_indexes.end(), val) != tail_indexes.end();
-        });
-    return next_indexes.first(static_cast<std::size_t>(std::distance(
-            next_indexes.begin(), it)));
-    // next_indexes.erase(std::remove_if(next_indexes.begin(), next_indexes.end(),
-        // [&tail_indexes] (const auto& val)
-        // {
-          // return std::find(tail_indexes.begin(),
-              // tail_indexes.end(), val) != tail_indexes.end();
-        // }), next_indexes.end());
+  // auto ti = tail_indexes.begin();
+  // auto ni = next_indexes.begin();
+  // const auto ti_end = tail_indexes.end();
+  // const auto ni_end = next_indexes.end();
+
+  JR_ASSERT(std::is_sorted(ni, ni_end));
+  JR_ASSERT(std::is_sorted(ti, ti_end));
+  JR_ASSERT(contains_no_duplicates(ni, ni_end), "Input must be unique");
+  JR_ASSERT(contains_no_duplicates(ti, ti_end), "Input must be unique");
+  // JR_ASSERT(std::unique(ni, ni_end) == ni_end);
+  // std::unique(ti, ti_end) == ti_end;
+
+  if (ni == ni_end || ti == ti_end) return ni_end;
+
+  // Find first value where ni == ti
+  for (; ni != ni_end; )
+  {
+    if (ti == ti_end)
+    {
+      return ni_end;
+    }
+    if (*ni < *ti)
+    {
+      ++ni;
+    } else if (*ti < *ni)
+    {
+      ++ti;
+    } else
+    {
+      break;
+    }
+  }
+  // ni is now either at end, or at first "bad" value that we want to overwrite
+
+  if (ni == ni_end) return ni_end;
+
+  for (auto ni1 = std::next(ni); ni1 != ni_end;)
+  {
+    if (ti == ti_end)
+    {
+      ni = std::copy(ni1, ni_end, ni);
+      break;
+    }
+
+    // if (*ni1 != *ti)
+    // {
+      // // Want to keep this value, so write it back
+      // //PRINT("Keeping {} by overwiting {}\n", *ni1, *ni);
+      // *ni++ = *ni1;
+    // }
+    if (*ni1 < *ti)
+    {
+      *ni++ = *ni1++;
+    } else if (*ti < *ni1)
+    {
+      ++ti;
+    } else
+    {
+      ++ni1;
+      ++ti;
+    }
+  }
+
+  return ni;
 }
 
 void result_inserts(
@@ -228,6 +287,61 @@ void result_inserts(
 //}
 
 } // namespace
+
+template<>
+struct fmt::formatter<wordsearch_solver::Index>
+{
+  constexpr auto parse(format_parse_context& ctx)
+  {
+    auto it = ctx.begin(), end = ctx.end();
+    // if (it != end && (*it == 'f' || *it == 'e')) presentation = *it++;
+
+    // Check if reached the end of the range:
+    if (it != end && *it != '}')
+      throw format_error("invalid format");
+
+    // Return an iterator past the end of the parsed range:
+    return it;
+  }
+
+  // Formats the point p using the parsed format specification (presentation)
+  // stored in this formatter.
+  template <typename FormatContext>
+  auto format(const wordsearch_solver::Index& p, FormatContext& ctx)
+  {
+    // ctx.out() is an output iterator to write to.
+    return format_to(ctx.out(), "{{{}, {}}}", p.first, p.second);
+  }
+
+};
+
+template<>
+struct fmt::formatter<nonstd::span<Index, nonstd::dynamic_extent>>
+{
+  constexpr auto parse(format_parse_context& ctx)
+  {
+    auto it = ctx.begin(), end = ctx.end();
+    // if (it != end && (*it == 'f' || *it == 'e')) presentation = *it++;
+
+    // Check if reached the end of the range:
+    if (it != end && *it != '}')
+      throw format_error("invalid format");
+
+    // Return an iterator past the end of the parsed range:
+    return it;
+  }
+
+  // Formats the point p using the parsed format specification (presentation)
+  // stored in this formatter.
+  template <typename FormatContext>
+  auto format(const nonstd::span<Index, nonstd::dynamic_extent>& p,
+      FormatContext& ctx)
+  {
+    // ctx.out() is an output iterator to write to.
+    return format_to(ctx.out(), "{}", fmt::join(p.begin(), p.end(), ", "));
+  }
+
+};
 
 namespace wordsearch_solver
 {
@@ -342,6 +456,7 @@ StringIndexes find_words(
   std::array<Index, 8> next_indexes{};
 
   std::vector<Index> tail_indexes{};
+  std::vector<Index> sorted_tail_indexes{};
   std::string tail_word{};
 
   StringIndexes stringindexes{grid};
@@ -352,18 +467,34 @@ StringIndexes find_words(
     return grid->at(index.first).at(index.second);
   };
 
+  // Same treatment as next_indexes as this can only ever be up to size 8
+  // Perhaps replace both with boost::small_vector
+  // In fact should be able to do this for both
   std::vector<Index> new_layer;
 
+  auto push_back_on_tail = [&](const Index index)
+  {
+    tail_indexes.push_back(index);
+    tail_word.push_back(index_to_char(index));
+    sorted_tail_indexes.insert(std::lower_bound(sorted_tail_indexes.begin(),
+          sorted_tail_indexes.end(), index), index);
+    JR_ASSERT(contains_no_duplicates(tail_indexes), "Added {}", index);
+    JR_ASSERT(contains_no_duplicates(sorted_tail_indexes), "Added {}", index);
+  };
 
-//  stringindexes.insert()
-  // a.push_back({start});
-  // tail_indexes.push_back({start});
-  // tail_word.push_back(index_to_char(start));
+  auto pop_back_off_tail = [&]()
+  {
+    JR_ASSERT(!tail_indexes.empty());
 
-  // TODO: for god's sake put this in a function
-  // surrounding(start.first, start.second, grid, next_indexes);
-  // const auto init_suffixes = next_indexes;
-  // const std::string init_suffixes_str = indexes_to_word(grid, init_suffixes);
+    // const auto pos = std::find(sorted_tail_indexes.begin(),
+          // sorted_tail_indexes.end(), tail_indexes.back());
+    const auto pos = std::lower_bound(sorted_tail_indexes.begin(),
+        sorted_tail_indexes.end(), tail_indexes.back());
+    JR_ASSERT(pos != sorted_tail_indexes.end());
+    sorted_tail_indexes.erase(pos);
+    tail_indexes.pop_back();
+    tail_word.pop_back();
+  };
 
   {
     const std::vector<Index> init_suffixes = {start};
@@ -393,8 +524,7 @@ StringIndexes find_words(
     {
       // spdlog::debug/("Adding new layer of letters {}", indexes_to_word(grid,
   //            new_layer));
-      tail_indexes.push_back(new_layer[0]);
-      tail_word.push_back(index_to_char(new_layer[0]));
+      push_back_on_tail(new_layer[0]);
       a.emplace_back(std::move(new_layer));
     }
   }
@@ -406,6 +536,7 @@ StringIndexes find_words(
   while (!a.empty())
   {
     new_layer.clear();
+    //PRINT("\n");
     // spdlog::debug/("\nIteration");
     JR_ASSERT(!a.empty() && !a.back().empty());
     const auto& last = a.back().front();
@@ -418,49 +549,30 @@ StringIndexes find_words(
     auto valid_surrounding_indexes = surrounding(last.first, last.second, grid,
           nonstd::span<Index, 8>(next_indexes));
 
-    // spdlog::debug/("Surrouding are {} {}", next_indexes, indexes_to_word(grid, next_indexes));
+    JR_ASSERT(contains_no_duplicates(valid_surrounding_indexes));
 
-    // SORT the suffixes but have to map back to indexes
-    // Hmmm
+    //PRINT("tail_indexes: {}\n", tail_indexes);
+    //PRINT("sorted_tail_indexes: {}\n", sorted_tail_indexes);
+    //PRINT("valid_surrounding_indexes: {}\n",
+        // fmt::format("{}", fmt::join(valid_surrounding_indexes.begin(),
+          // valid_surrounding_indexes.end(),
+          // ", "))
+        // );
+    const auto it = remove_from_second_if_in_first(
+        sorted_tail_indexes.begin(), sorted_tail_indexes.end(),
+        valid_surrounding_indexes.begin(), valid_surrounding_indexes.end());
+    //PRINT("valid_surrounding_indexes before: {}\n", valid_surrounding_indexes);
+    //PRINT("distance from begin to it: {}\n",
+        // it - valid_surrounding_indexes.begin());
+    valid_surrounding_indexes =
+      valid_surrounding_indexes.first(static_cast<std::size_t>(
+          std::distance(valid_surrounding_indexes.begin(), it)));
+    //PRINT("valid_surrounding_indexes after first: {}\n", valid_surrounding_indexes);
 
-    /* Remove surrounding indexes that would bite tail_indexes */
-    // nonstd::span<Index, nonstd::dynamic_extent> next_indexes_span
-    valid_surrounding_indexes = remove_from_first_if_in_second(
-        valid_surrounding_indexes, tail_indexes);
-    // next_indexes.erase(std::remove_if(next_indexes.begin(), next_indexes.end(),
-        // [&tail_indexes] (const auto& val)
-        // {
-          // return std::find(tail_indexes.begin(),
-              // tail_indexes.end(), val) != tail_indexes.end();
-        // }), next_indexes.end());
-    // spdlog::debug/("Surrouding are now {}", next_indexes);
-
-    /* Remove surrounding indexes if would not ever form word */
+    JR_ASSERT(contains_no_duplicates(valid_surrounding_indexes));
 
     const auto& suffixes = valid_surrounding_indexes;
     const std::string suffixes_str = indexes_to_word(grid, suffixes);
-
-    // const auto concat = [] (std::vector<Index> indexes, const Index index)
-    // {
-      // indexes.push_back(index);
-      // return indexes;
-    // };
-
-    // tail_word.push_back('\0');
-    // for (const auto index: next_indexes)
-    // {
-      // tail_word.back() = index_to_char(index);
-      // if (dictionary.contains(tail_word))
-      // {
-        // stringindexes.insert({tail_word, concat(tail_indexes, index)});
-      // }
-      // if (dictionary.further(tail_word))
-      // {
-        // new_layer.emplace_back(index);
-      // }
-      // // dictionary.contains(
-    // }
-    // tail_word.pop_back();
 
     dictionary.contains_and_further(tail_word, suffixes_str, result);
 
@@ -472,31 +584,16 @@ StringIndexes find_words(
         tail_indexes,
         tail_word,
         new_layer);
-    // Output words that satisfy contains, add those that satisfy further to the
-    // queue to be added next iteration
-    // for (const auto i: result.contains)
-    // {
-      // stringindexes.insert(
-          // {tail_word + suffixes_str[i], concat(tail_indexes, suffixes[i])});
-    // }
-    // for (const auto i: result.contains_and_further)
-    // {
-      // stringindexes.insert(
-          // {tail_word + suffixes_str[i], concat(tail_indexes, suffixes[i])});
-      // new_layer.emplace_back(suffixes[i]);
-    // }
-    // for (const auto i: result.further)
-    // {
-      // new_layer.emplace_back(suffixes[i]);
-    // }
+
     result.clear();
 
     if (!new_layer.empty())
     {
       // spdlog::debug/("Adding new layer of letters {}", indexes_to_word(grid,
 //            new_layer));
-      tail_indexes.push_back(new_layer[0]);
-      tail_word.push_back(index_to_char(new_layer[0]));
+
+      //PRINT("!new_layer.empty() push back of {}\n", new_layer);
+      push_back_on_tail(new_layer[0]);
       a.emplace_back(std::move(new_layer));
     } else
     {
@@ -507,8 +604,7 @@ StringIndexes find_words(
       {
         // spdlog::debug/("Popping additional size 1 {}", a.back());
         a.pop_back();
-        tail_indexes.pop_back();
-        tail_word.pop_back();
+        pop_back_off_tail();
       }
       if (!a.empty())
       {
@@ -517,15 +613,24 @@ StringIndexes find_words(
         /* a.back().pop_front(); */
         /* Potential optim further here with faster erase that doesn't preserve
          * a nice ordering like this */
+
+        // a.back().erase(a.back().begin());
+        // if (!a.back().empty())
+        // {
+          // tail_indexes.back() = a.back().front();
+          // tail_word.back() = index_to_char(a.back().front());
+        // } else
+        // {
+          // tail_indexes.pop_back();
+          // tail_word.pop_back();
+        // }
+
         a.back().erase(a.back().begin());
+        pop_back_off_tail();
         if (!a.back().empty())
         {
-          tail_indexes.back() = a.back().front();
-          tail_word.back() = index_to_char(a.back().front());
-        } else
-        {
-          tail_indexes.pop_back();
-          tail_word.pop_back();
+          //PRINT("Lower push back of {}\n", a.back().front());
+          push_back_on_tail(a.back().front());
         }
         // spdlog::debug/("after ops: tail_indexes: {} vs a: {} vs a.back(): {}", tail_indexes, a, a.back());
       }
@@ -543,11 +648,16 @@ StringIndexes find_words(
 Grid grid_from_file(const std::filesystem::path& wordsearch_file)
 {
   namespace fs = std::filesystem;
-  /* fmt::print("Reading wordsearch from file\n"); */
+  /* //PRINT("Reading wordsearch from file\n"); */
   spdlog::debug("Reading wordsearch from file");
   /* fs::path wordsearch_file{argv[1]}; */
+  // FIXME: have just noticed my clangd is flagging this as passing non-POD
+  // type to varargs function which stackoverflow tells me is implementation
+  // defined. However the varargs function captures by forwarding reference not
+  // by value, unsure if this is ok or not?
+  // Calling c_str() for now
   JR_ASSERT(fs::exists(wordsearch_file), "Wordsearch file must exist at path {}",
-      wordsearch_file);
+      wordsearch_file.c_str());
   auto grid = std::make_shared<Grid::element_type>();
   // Interesting idea - https://stackoverflow.com/a/18514815/8594193
   std::ifstream inp{wordsearch_file};
@@ -566,10 +676,11 @@ Grid grid_from_file(const std::filesystem::path& wordsearch_file)
       c = static_cast<char>(std::tolower(c));
     }
     grid->emplace_back(std::move(line));
-    /* fmt::print("Line: {}\n", line); */
+    /* //PRINT("Line: {}\n", line); */
   }
 
-  JR_ASSERT(!grid->empty(), "Read empty grid from file: {}", wordsearch_file);
+  JR_ASSERT(!grid->empty(), "Read empty grid from file: {}",
+      wordsearch_file.c_str());
   // Left check in here so if prior line deleted/assert turned off this
   // won't yield UB.
   if (!grid->empty())
