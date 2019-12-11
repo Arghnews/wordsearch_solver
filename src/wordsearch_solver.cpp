@@ -24,7 +24,7 @@
 
 #include <gperftools/profiler.h>
 #include "nonstd/span.hpp"
-#include <boost/dynamic_bitset/dynamic_bitset.hpp>
+// #include <boost/dynamic_bitset/dynamic_bitset.hpp>
 
 // For now for debug
 #include "trie.h"
@@ -200,36 +200,6 @@ void result_inserts(
 //    /* const std::string_view needle) */
 //{
 
-////  const auto it = std::lower_bound(first, last, needle);
-//  const auto it = dictionary.lower_bound(needle);
-//  /* const auto it = std::find(first, last, needle); */
-//  // Hacked for now for std::set
-//  // Well this sucks
-//  // Requires std::set<T, std::less<>>
-//  /* const auto it = haystack.lower_bound(needle); */
-//  /* const auto it = haystack.lower_bound(std::string{needle}); */
-//  /* Avoids using substr on needle - needle was string_view but time being
-//   * wasted calling operator string on the view for substr, this (hopefully!)
-//   * avoids any extraneous string */
-//  /* if (it == haystack.end()) return false; */
-//  if (it == dictionary.end()) return false;
-//  const auto& haystack_string = *it;
-//  const auto size = static_cast<
-//    std::decay_t<decltype(needle)>::difference_type>(
-//      std::min(haystack_string.size(), needle.size()));
-//  return std::equal(
-//      haystack_string.begin(), std::next(haystack_string.begin(), size),
-//      needle.begin(), std::next(needle.begin(), size));
-//}
-
-//// Here for clear profiling output
-//__attribute__((__noinline__)) auto lower_bound(const Dictionary& dictionary, const std::string& tail_word)
-//{
-////  return dictionary.lower_bound(tail_word);
-//  return dictionary.find(tail_word);
-////  return std::lower_bound(dictionary.begin(), dictionary.end(), tail_word);
-//}
-
 } // namespace
 
 template<>
@@ -290,7 +260,8 @@ struct fmt::formatter<nonstd::span<Index, nonstd::dynamic_extent>>
 namespace wordsearch_solver
 {
 
-// std::string indexes_to_word(const Grid& grid, const Indexes& tail)
+// NOTE: do not move this to detail (like you've tried at least twice now) as
+// it's used in at least one place outside this translation unit.
 std::string indexes_to_word(const Grid& grid,
     const nonstd::span<Index, nonstd::dynamic_extent> tail)
 {
@@ -301,7 +272,7 @@ std::string indexes_to_word(const Grid& grid,
   {
     // spdlog::debug("Index [{}, {}]", i, j);
     // word.push_back(grid->at(i).at(j));
-    word.push_back((*grid.get())[i][j]);
+    word.push_back((*grid)[i][j]);
   }
   return word;
 }
@@ -362,7 +333,7 @@ std::string indexes_to_word(const Grid& grid,
  * the end point. Then should go and see what the usual distances are. */
 
 //std::pair<std::vector<std::string>, std::vector<std::vector<Index>>>
-__attribute__((__noinline__))
+// __attribute__((__noinline__))
 StringIndexes find_words(
     const Dictionary& dictionary, const Grid& grid, const Index start)
 //    StringIndexes& stringindexes)
@@ -378,19 +349,6 @@ StringIndexes find_words(
   //
 
   JR_ASSERT(!grid->empty());
-  const auto row_max_width = std::max_element(grid->begin(), grid->end(),
-      [] (const auto& row1, const auto& row2)
-      {
-        return row1.size() >= row2.size();
-      })->size();
-  const auto number_of_rows = grid->size();
-  boost::dynamic_bitset<> tail_indexes_matrix(row_max_width * number_of_rows);
-
-  const auto index_to_matrix_index = [row_max_width] (const auto& index)
-  {
-    return row_max_width * index.first + index.second;
-  };
-
   std::vector<std::string> found_words{};
   std::vector<std::vector<Index>> found_indexes{};
   std::vector<std::vector<Index>> a{};
@@ -417,18 +375,12 @@ StringIndexes find_words(
   {
     tail_indexes.push_back(index);
     tail_word.push_back(index_to_char(index));
-    tail_indexes_matrix.set(index_to_matrix_index(index));
-    // tail_indexes_matrix.set(
-    // tail_indexes_matrix.reset
     JR_ASSERT(contains_no_duplicates(tail_indexes), "Added {}", index);
   };
 
   auto pop_back_off_tail = [&]()
   {
     JR_ASSERT(!tail_indexes.empty());
-    // CAREFUL. Do not reorder .set() and the .pop_back() for obvious reasons
-    const auto& index = tail_indexes.back();
-    tail_indexes_matrix.reset(index_to_matrix_index(index));
     tail_indexes.pop_back();
     tail_word.pop_back();
   };
@@ -498,7 +450,8 @@ StringIndexes find_words(
               surrounding_indexes.end(),
               [&] (const auto& index)
               {
-                return tail_indexes_matrix.test(index_to_matrix_index(index));
+                return std::find(tail_indexes.begin(), tail_indexes.end(),
+                    index) != tail_indexes.end();
               });
     surrounding_indexes = surrounding_indexes.first(
         static_cast<std::size_t>(
@@ -547,22 +500,8 @@ StringIndexes find_words(
       if (!a.empty())
       {
         // spdlog::debug/("Popping last of back {}", a.back().front());
-        // spdlog::debug/("tail_indexes: {} vs a: {} vs a.back(): {}", tail_indexes, a, a.back());
-        /* a.back().pop_front(); */
-        /* Potential optim further here with faster erase that doesn't preserve
-         * a nice ordering like this */
-
-        // a.back().erase(a.back().begin());
-        // if (!a.back().empty())
-        // {
-          // tail_indexes.back() = a.back().front();
-          // tail_word.back() = index_to_char(a.back().front());
-        // } else
-        // {
-          // tail_indexes.pop_back();
-          // tail_word.pop_back();
-        // }
-
+        // spdlog::debug/("tail_indexes: {} vs a: {} vs a.back(): {}",
+        // tail_indexes, a, a.back());
         a.back().erase(a.back().begin());
         pop_back_off_tail();
         if (!a.back().empty())
@@ -570,7 +509,8 @@ StringIndexes find_words(
           //PRINT("Lower push back of {}\n", a.back().front());
           push_back_on_tail(a.back().front());
         }
-        // spdlog::debug/("after ops: tail_indexes: {} vs a: {} vs a.back(): {}", tail_indexes, a, a.back());
+        // spdlog::debug/("after ops: tail_indexes: {} vs a: {} vs a.back(): {}",
+        // tail_indexes, a, a.back());
       }
       // spdlog::debug/("a: {}", a);
 

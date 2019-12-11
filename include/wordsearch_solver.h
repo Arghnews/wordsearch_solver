@@ -34,7 +34,6 @@ namespace wordsearch_solver
 
   std::string indexes_to_word(const Grid& grid,
       const nonstd::span<Index, nonstd::dynamic_extent> tail);
-
   // TODO: move to .tpp or the like. Find out how to make this work with cmake
 //  template<class T> void sort_unique(T& vec)
 //  {

@@ -53,7 +53,7 @@ endif()
 string(CONCAT COMPILER_FLAGS "-Wall -Wextra -pedantic -Wfloat-equal "
     "-Wwrite-strings -Wswitch-enum -Wunreachable-code -Wconversion "
     "-Wcast-qual -Wstrict-overflow=5 -Werror=uninitialized "
-    "-Werror=return-type -pipe")
+    "-Werror=return-type -pipe -fdiagnostics-color")
 #  -fno-inline-functions
 
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fno-inline-functions ${COMPILER_FLAGS}")
