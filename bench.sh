@@ -10,6 +10,7 @@ set -u -o pipefail
 # With editted version of gprof no need to set CPUPROFILE as it's hard coded in
 # Getting again to place where optimised version is too fast for reliable
 # sampling. Perhaps time to make a new bigger test case?
+grep CMAKE_BUILD_TYPE build/CMakeCache.txt
 if [ $# -eq 0 ]
 then
     set -x

@@ -24,6 +24,7 @@
 
 #include <gperftools/profiler.h>
 #include "nonstd/span.hpp"
+#include <boost/dynamic_bitset/dynamic_bitset.hpp>
 
 // For now for debug
 #include "trie.h"
@@ -154,7 +155,6 @@ Iter2 remove_from_second_if_in_first(
         return std::find(ti, ti_end, val) != ti_end;
       });
 }
-
 
 void result_inserts(
     const Result& result,
@@ -371,28 +371,25 @@ StringIndexes find_words(
   //
   //
   //
-  //
-  //
-  //
-  //
-  //
-  //
-  //
-  //
   // TODO: refactor the shit out of this
   //
   //
   //
   //
-  //
-  //
-  //
-  //
-  //
-  //
-  //
-  //
-  //
+
+  JR_ASSERT(!grid->empty());
+  const auto row_max_width = std::max_element(grid->begin(), grid->end(),
+      [] (const auto& row1, const auto& row2)
+      {
+        return row1.size() >= row2.size();
+      })->size();
+  const auto number_of_rows = grid->size();
+  boost::dynamic_bitset<> tail_indexes_matrix(row_max_width * number_of_rows);
+
+  const auto index_to_matrix_index = [row_max_width] (const auto& index)
+  {
+    return row_max_width * index.first + index.second;
+  };
 
   std::vector<std::string> found_words{};
   std::vector<std::vector<Index>> found_indexes{};
@@ -408,6 +405,7 @@ StringIndexes find_words(
   {
     /* return grid.at(index.i).at(index.j); */
     return grid->at(index.first).at(index.second);
+    // return (*grid)[index.first][index.second];
   };
 
   // Same treatment as next_indexes as this can only ever be up to size 8
@@ -419,12 +417,18 @@ StringIndexes find_words(
   {
     tail_indexes.push_back(index);
     tail_word.push_back(index_to_char(index));
+    tail_indexes_matrix.set(index_to_matrix_index(index));
+    // tail_indexes_matrix.set(
+    // tail_indexes_matrix.reset
     JR_ASSERT(contains_no_duplicates(tail_indexes), "Added {}", index);
   };
 
   auto pop_back_off_tail = [&]()
   {
     JR_ASSERT(!tail_indexes.empty());
+    // CAREFUL. Do not reorder .set() and the .pop_back() for obvious reasons
+    const auto& index = tail_indexes.back();
+    tail_indexes_matrix.reset(index_to_matrix_index(index));
     tail_indexes.pop_back();
     tail_word.pop_back();
   };
@@ -479,31 +483,33 @@ StringIndexes find_words(
 
     // Have put in template args for now as want to experiment/ensure that
     // static extent is used, see if it brings any benefit/downside
-    auto valid_surrounding_indexes = surrounding(last.first, last.second, grid,
+    auto surrounding_indexes = surrounding(last.first, last.second, grid,
           nonstd::span<Index, 8>(next_indexes));
 
-    JR_ASSERT(contains_no_duplicates(valid_surrounding_indexes));
+    JR_ASSERT(contains_no_duplicates(surrounding_indexes));
 
     //PRINT("tail_indexes: {}\n", tail_indexes);
-    //PRINT("valid_surrounding_indexes: {}\n",
-        // fmt::format("{}", fmt::join(valid_surrounding_indexes.begin(),
-          // valid_surrounding_indexes.end(),
+    //PRINT("surrounding_indexes: {}\n",
+        // fmt::format("{}", fmt::join(surrounding_indexes.begin(),
+          // surrounding_indexes.end(),
           // ", "))
         // );
-    const auto it = remove_from_second_if_in_first(
-        tail_indexes.begin(), tail_indexes.end(),
-        valid_surrounding_indexes.begin(), valid_surrounding_indexes.end());
-    //PRINT("valid_surrounding_indexes before: {}\n", valid_surrounding_indexes);
-    //PRINT("distance from begin to it: {}\n",
-        // it - valid_surrounding_indexes.begin());
-    valid_surrounding_indexes =
-      valid_surrounding_indexes.first(static_cast<std::size_t>(
-          std::distance(valid_surrounding_indexes.begin(), it)));
-    //PRINT("valid_surrounding_indexes after first: {}\n", valid_surrounding_indexes);
+    const auto surround_end_it = std::remove_if(surrounding_indexes.begin(),
+              surrounding_indexes.end(),
+              [&] (const auto& index)
+              {
+                return tail_indexes_matrix.test(index_to_matrix_index(index));
+              });
+    surrounding_indexes = surrounding_indexes.first(
+        static_cast<std::size_t>(
+          std::distance(surrounding_indexes.begin(), surround_end_it)
+          )
+        );
+    //PRINT("surrounding_indexes after first: {}\n", surrounding_indexes);
 
-    JR_ASSERT(contains_no_duplicates(valid_surrounding_indexes));
+    JR_ASSERT(contains_no_duplicates(surrounding_indexes));
 
-    const auto& suffixes = valid_surrounding_indexes;
+    const auto& suffixes = surrounding_indexes;
     const std::string suffixes_str = indexes_to_word(grid, suffixes);
 
     dictionary.contains_and_further(tail_word, suffixes_str, result);

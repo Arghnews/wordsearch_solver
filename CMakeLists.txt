@@ -57,7 +57,8 @@ string(CONCAT COMPILER_FLAGS "-Wall -Wextra -pedantic -Wfloat-equal "
 #  -fno-inline-functions
 
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fno-inline-functions ${COMPILER_FLAGS}")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -fno-inline-functions -fno-omit-frame-pointer -march=native ${COMPILER_FLAGS}")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -fno-omit-frame-pointer -march=native ${COMPILER_FLAGS}")
+# set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -fno-inline-functions -fno-omit-frame-pointer -march=native ${COMPILER_FLAGS}")
 # set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DNDEBUG -O3 -march=native ${COMPILER_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3 -march=native ${COMPILER_FLAGS}")
 

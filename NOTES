@@ -11,3 +11,8 @@ Change surrouding to pass an index to latest, save all the vector movement shena
 Index by size, index by first letter, vector sorted by lexicographic
 Index by first letter, index by size, vector sorted by lexicographic
 
+I am dumb and should have recorded performance of things somehow with each solver.
+Unsure exactly the way to do this cleanly, and better late than never I suppose.
+
+
+boost::dynamic_bitset for surrouding calculation is slightly slower (it seems) - 75ms~ for solve
