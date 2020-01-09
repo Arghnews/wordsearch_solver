@@ -7,6 +7,7 @@
 #include <set>
 #include <utility>
 #include <vector>
+#include <variant>
 
 namespace wordsearch_solver
 {
@@ -16,6 +17,31 @@ using Grid = std::shared_ptr<std::vector<std::string>>;
 //using Dictionary = std::set<std::string>;
 using Index = std::pair<std::size_t, std::size_t>;
 using Indexes = std::vector<Index>;
+
+template<class... Solvers>
+struct Solver
+{
+  template<class OutputIndexIterator>
+  void contains_and_further(
+      const std::string& stem,
+      const std::string& suffixes,
+      OutputIndexIterator contains,
+      OutputIndexIterator further,
+      OutputIndexIterator contains_and_further
+      ) const
+  {
+    return std::visit([&](auto&& solver)
+        {
+          return solver.contains_and_further(
+              stem,
+              suffixes,
+              contains,
+              further,
+              contains_and_further);
+        }, solvers_);
+  }
+  std::variant<Solvers...> solvers_;
+};
 
 // TODO: change this impl
 struct Result

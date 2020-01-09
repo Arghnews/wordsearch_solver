@@ -7,9 +7,9 @@
 #include <vector>
 
 #include <catch2/catch.hpp>
+#include "wordsearch_solver_defs.h"
 #include "wordsearch_solver.h"
 
-#include "dictionary.h"
 #include "dictionary_std_set.h"
 #include "dictionary_std_vector.h"
 #include "trie.h"
@@ -94,14 +94,17 @@ TEST_CASE( "Check test inputs", "[input]")
 }
 
 TEMPLATE_TEST_CASE( "Test wordsearch/dict implementations", "[test]",
-    DictionaryStdSet, TrieWrapper, DictionaryStdVector)
+    DictionaryStdSet, DictionaryStdVector, trie::CompactTrie)
+// DictionaryStdVector)
     // TrieWrapper)
     // DictionaryStdSet)
 {
   const auto dictionary_path = test_cases_dirname / dictionary_filename;
   const auto dict_words = sort_unique(::readlines(dictionary_path));
 
-  const wordsearch_solver::Dictionary dict = TestType{dict_words};
+  using Dictionary = wordsearch_solver::Solver<
+    DictionaryStdSet, DictionaryStdVector, trie::CompactTrie>;
+  const Dictionary dict{TestType{dict_words}};
   for (const auto &test_dir : fs::directory_iterator(test_cases_dirname))
   {
     if (!fs::is_directory(test_dir))

@@ -1,10 +1,12 @@
-#include "wordsearch_solver.h"
+#ifndef WORDSEARCH_SOLVER_TCC
+#define WORDSEARCH_SOLVER_TCC
 
 #include <algorithm>
 #include <array>
 #include <filesystem>
 #include <fmt/core.h>
 #include <fstream>
+#include <iostream>
 #include <iterator>
 #include <memory>
 #include <ostream>
@@ -19,8 +21,7 @@
 #include <fmt/ostream.h> // Need for printing vector etc. with prettyprint
 #include "spdlog/spdlog.h"
 #include "prettyprint.hpp"
-#include "jr_assert/jr_assert.h"
-#include "dictionary.h"
+//#include "dictionary.h"
 
 #include <gperftools/profiler.h>
 #include "nonstd/span.hpp"
@@ -29,6 +30,66 @@
 // For now for debug
 #include "trie.h"
 #include "wordsearch_solver_defs.h"
+#include <jr_assert/jr_assert.h>
+#include "stringindexes.h"
+
+template<>
+struct fmt::formatter<wordsearch_solver::Index>
+{
+  constexpr auto parse(format_parse_context& ctx)
+  {
+    auto it = ctx.begin(), end = ctx.end();
+    // if (it != end && (*it == 'f' || *it == 'e')) presentation = *it++;
+
+    // Check if reached the end of the range:
+    if (it != end && *it != '}')
+      throw format_error("invalid format");
+
+    // Return an iterator past the end of the parsed range:
+    return it;
+  }
+
+  // Formats the point p using the parsed format specification (presentation)
+  // stored in this formatter.
+  template <typename FormatContext>
+  auto format(const wordsearch_solver::Index& p, FormatContext& ctx)
+  {
+    // ctx.out() is an output iterator to write to.
+    return format_to(ctx.out(), "{{{}, {}}}", p.first, p.second);
+  }
+
+};
+
+template<>
+struct fmt::formatter<nonstd::span<wordsearch_solver::Index,
+  nonstd::dynamic_extent>>
+{
+  constexpr auto parse(format_parse_context& ctx)
+  {
+    auto it = ctx.begin(), end = ctx.end();
+    // if (it != end && (*it == 'f' || *it == 'e')) presentation = *it++;
+
+    // Check if reached the end of the range:
+    if (it != end && *it != '}')
+      throw format_error("invalid format");
+
+    // Return an iterator past the end of the parsed range:
+    return it;
+  }
+
+  // Formats the point p using the parsed format specification (presentation)
+  // stored in this formatter.
+  template <typename FormatContext>
+  auto format(const nonstd::span<wordsearch_solver::Index,
+      nonstd::dynamic_extent>& p,
+      FormatContext& ctx)
+  {
+    // ctx.out() is an output iterator to write to.
+    return format_to(ctx.out(), "{}", fmt::join(p.begin(), p.end(), ", "));
+  }
+
+};
+
 
 // #define //PRINT fmt::print
 // #define //PRINT(...)
@@ -52,15 +113,15 @@
 /*   } */
 /* }; */
 
-namespace
-{
+// debug_assert::set_level<1>;
 
-using namespace wordsearch_solver;
+namespace wordsearch_solver
+{
 
 // Output parameters make me sad but returning a vector by value and the ensuing
 // copying was slow
 nonstd::span<Index, nonstd::dynamic_extent>
-surrounding(
+inline surrounding(
     const std::size_t i, const std::size_t j, const Grid& gridp,
     nonstd::span<Index, 8> result)
     // const std::array<Index, 8>& arr)
@@ -123,13 +184,18 @@ surrounding(
 template<class It1, class It2>
 constexpr bool contains_no_duplicates(It1 it1, It2 it2)
 {
+  // (void)it1;
+  // (void)it2;
+  // return true;
   return std::adjacent_find(it1, it2) == it2;
 }
 
 template<class Container>
 constexpr bool contains_no_duplicates(Container& c)
 {
+  // (void)c;
   // Heavyweight but meh
+  // return true;
   std::vector<typename Container::value_type> cont(
       std::begin(c), std::end(c));
   std::sort(cont.begin(), cont.end());
@@ -156,7 +222,7 @@ Iter2 remove_from_second_if_in_first(
       });
 }
 
-void result_inserts(
+inline void result_inserts(
     const Result& result,
     // const Indexes& suffixes,
     const nonstd::span<Index, nonstd::dynamic_extent> suffixes,
@@ -230,68 +296,8 @@ void result_inserts(
 ////  return std::lower_bound(dictionary.begin(), dictionary.end(), tail_word);
 //}
 
-} // namespace
-
-template<>
-struct fmt::formatter<wordsearch_solver::Index>
-{
-  constexpr auto parse(format_parse_context& ctx)
-  {
-    auto it = ctx.begin(), end = ctx.end();
-    // if (it != end && (*it == 'f' || *it == 'e')) presentation = *it++;
-
-    // Check if reached the end of the range:
-    if (it != end && *it != '}')
-      throw format_error("invalid format");
-
-    // Return an iterator past the end of the parsed range:
-    return it;
-  }
-
-  // Formats the point p using the parsed format specification (presentation)
-  // stored in this formatter.
-  template <typename FormatContext>
-  auto format(const wordsearch_solver::Index& p, FormatContext& ctx)
-  {
-    // ctx.out() is an output iterator to write to.
-    return format_to(ctx.out(), "{{{}, {}}}", p.first, p.second);
-  }
-
-};
-
-template<>
-struct fmt::formatter<nonstd::span<Index, nonstd::dynamic_extent>>
-{
-  constexpr auto parse(format_parse_context& ctx)
-  {
-    auto it = ctx.begin(), end = ctx.end();
-    // if (it != end && (*it == 'f' || *it == 'e')) presentation = *it++;
-
-    // Check if reached the end of the range:
-    if (it != end && *it != '}')
-      throw format_error("invalid format");
-
-    // Return an iterator past the end of the parsed range:
-    return it;
-  }
-
-  // Formats the point p using the parsed format specification (presentation)
-  // stored in this formatter.
-  template <typename FormatContext>
-  auto format(const nonstd::span<Index, nonstd::dynamic_extent>& p,
-      FormatContext& ctx)
-  {
-    // ctx.out() is an output iterator to write to.
-    return format_to(ctx.out(), "{}", fmt::join(p.begin(), p.end(), ", "));
-  }
-
-};
-
-namespace wordsearch_solver
-{
-
 // std::string indexes_to_word(const Grid& grid, const Indexes& tail)
-std::string indexes_to_word(const Grid& grid,
+inline std::string indexes_to_word(const Grid& grid,
     const nonstd::span<Index, nonstd::dynamic_extent> tail)
 {
   std::string word;
@@ -362,8 +368,9 @@ std::string indexes_to_word(const Grid& grid,
  * the end point. Then should go and see what the usual distances are. */
 
 //std::pair<std::vector<std::string>, std::vector<std::vector<Index>>>
+template<class Dictionary>
 __attribute__((__noinline__))
-StringIndexes find_words(
+wordsearch_solver::StringIndexes find_words(
     const Dictionary& dictionary, const Grid& grid, const Index start)
 //    StringIndexes& stringindexes)
 {
@@ -376,6 +383,18 @@ StringIndexes find_words(
   //
   //
   //
+
+  // Replace asserts with DEBUG_ASSERT and see if that fixes things!
+
+  // Fix your fucking asserts
+  // Either of:
+  // https://github.com/gpakosz/PPK_ASSERT
+  // https://github.com/foonathan/debug_assert
+  // Then fix up master ensuring this runs on Release at ~45ms
+  // Then go and think and optimise inserts/the trie.
+  // Think it's finally time for memory. Consider a memory pool.
+  // Consider doing each trie per letter.
+  // Consider each trie per level.
 
   JR_ASSERT(!grid->empty());
   const auto row_max_width = std::max_element(grid->begin(), grid->end(),
@@ -434,10 +453,19 @@ StringIndexes find_words(
   };
 
   {
+    Result init_result;
+    // t.contains_and_further(str("ahe"), "amz",
+        // std::back_inserter(result.contains),
+        // std::back_inserter(result.further),
+        // std::back_inserter(result.contains_and_further)
+        // );
     const std::vector<Index> init_suffixes = {start};
     const auto init_suffixes_str = std::string{index_to_char(start)};
-    wordsearch_solver::Result init_result;
-    dictionary.contains_and_further("", {index_to_char(start)}, init_result);
+
+    dictionary.contains_and_further("", {index_to_char(start)},
+        std::back_inserter(init_result.contains),
+        std::back_inserter(init_result.further),
+        std::back_inserter(init_result.contains_and_further));
 
     // Output words that satisfy contains, add those that satisfy further to the
     // queue to be added next iteration
@@ -468,7 +496,7 @@ StringIndexes find_words(
 
   ProfilerEnable();
 
-  wordsearch_solver::Result result;
+  Result result;
 
   while (!a.empty())
   {
@@ -512,7 +540,10 @@ StringIndexes find_words(
     const auto& suffixes = surrounding_indexes;
     const std::string suffixes_str = indexes_to_word(grid, suffixes);
 
-    dictionary.contains_and_further(tail_word, suffixes_str, result);
+    dictionary.contains_and_further(tail_word, suffixes_str,
+        std::back_inserter(result.contains),
+        std::back_inserter(result.further),
+        std::back_inserter(result.contains_and_further));
 
     result_inserts(
         result,
@@ -583,6 +614,37 @@ StringIndexes find_words(
   return stringindexes;
 }
 
+template<class Dictionary>
+StringIndexes solve(const Dictionary& dict, const Grid& grid)
+{
+  std::vector<std::vector<std::string>> words_found;
+  std::vector<std::vector<std::vector<Index>>> list_of_indexes_found;
+
+  StringIndexes stringindexes{grid};
+
+  /* More generic, less readable?.. */
+  using std::begin;
+  using std::end;
+  for (auto i_it = begin(*grid); i_it != end(*grid); std::advance(i_it, 1))
+  {
+    for (auto j_it = begin(*i_it); j_it != end(*i_it); std::advance(j_it, 1))
+    {
+      stringindexes.concat(find_words(dict, grid, Index{
+          std::distance(begin(*grid), i_it),
+          std::distance(begin(*i_it), j_it),
+          }));
+//      find_words(dict, grid, Index{
+//          std::distance(begin(*grid), i_it),
+//          std::distance(begin(*i_it), j_it),
+//          }, stringindexes);
+//      words_found.push_back(std::move(words));
+//      list_of_indexes_found.push_back(std::move(indexes));
+    }
+  }
+//  return {words_found, list_of_indexes_found};
+  return stringindexes;
+}
+
 Grid grid_from_file(const std::filesystem::path& wordsearch_file)
 {
   namespace fs = std::filesystem;
@@ -634,42 +696,9 @@ Grid grid_from_file(const std::filesystem::path& wordsearch_file)
   return grid;
 }
 
-/* To get just the list of words flatten the .first returned vector  */
-//std::pair<
-//  std::vector<std::vector<std::string>>,
-//  std::vector<std::vector<std::vector<Index>>>
-//>
-StringIndexes solve(const Dictionary& dict, const Grid& grid)
-{
-  std::vector<std::vector<std::string>> words_found;
-  std::vector<std::vector<std::vector<Index>>> list_of_indexes_found;
-
-  StringIndexes stringindexes{grid};
-
-  /* More generic, less readable?.. */
-  using std::begin;
-  using std::end;
-  for (auto i_it = begin(*grid); i_it != end(*grid); std::advance(i_it, 1))
-  {
-    for (auto j_it = begin(*i_it); j_it != end(*i_it); std::advance(j_it, 1))
-    {
-      stringindexes.concat(find_words(dict, grid, Index{
-          std::distance(begin(*grid), i_it),
-          std::distance(begin(*i_it), j_it),
-          }));
-//      find_words(dict, grid, Index{
-//          std::distance(begin(*grid), i_it),
-//          std::distance(begin(*i_it), j_it),
-//          }, stringindexes);
-//      words_found.push_back(std::move(words));
-//      list_of_indexes_found.push_back(std::move(indexes));
-    }
-  }
-//  return {words_found, list_of_indexes_found};
-  return stringindexes;
-}
-
 //sortable
 //to_string() / operator std::string()
 
 } // namespace wordsearch_solver
+
+#endif

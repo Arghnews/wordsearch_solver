@@ -2,64 +2,13 @@
 
 #include <algorithm>
 #include <iterator>
-#include <filesystem>
-#include <fstream>
-#include <set>
 #include <string>
 #include <type_traits>
 #include <vector>
 
-#include "jr_assert/jr_assert.h"
-
-#include "wordsearch_solver_defs.h"
-
 DictionaryStdSet::DictionaryStdSet(const std::vector<std::string>& dict)
   : dictionary_(dict.begin(), dict.end())
 {}
-
-void DictionaryStdSet::contains_and_further(
-    const std::string& stem_in,
-    const std::string& suffixes,
-    wordsearch_solver::Result& result_out) const
-{
-  // wordsearch_solver::Result result;
-  auto stem = stem_in;
-
-  // NOTE: found in benchmarking previous version that constructing a string for
-  // stem each time was a noticable expense. Consider if this again is a
-  // performance problem.
-
-
-  for (auto i = 0ULL; i < suffixes.size(); ++i)
-  {
-    stem.push_back(suffixes[i]);
-
-    // Wonder if possible to give optimiser chance to somehow schedule these
-    // together ie do both in separate arrays and then & them for the both?
-    // Would that be faster than this where maybe we must wait for both?
-    // Maybe change this to bitset after or something anyway rather than fat
-    // heap vectors
-    const auto contains = this->contains(stem);
-    const auto further = this->further(stem);
-    // if (contains)
-    // {
-      // assert(further);
-    // }
-    if (contains && further)
-    {
-      result_out.contains_and_further.push_back(i);
-    } else if (contains)
-    {
-      result_out.contains.push_back(i);
-    } else if (further)
-    {
-      result_out.further.push_back(i);
-    }
-
-    stem.pop_back();
-  }
-  // return result_out;
-}
 
 // no inline only here for benchmarking, remove in release?
 // __attribute__((__noinline__))

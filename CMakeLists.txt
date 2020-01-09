@@ -8,7 +8,7 @@ cmake_minimum_required(VERSION 3.14)
 project(wordsearch_solver)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-# set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(CMAKE_CXX_STANDARD 17)
 # Prevent madness
@@ -26,6 +26,7 @@ find_package(Catch2 REQUIRED)
 find_package(Boost 1.70.0 REQUIRED QUIET) # COMPONENTS container)
 find_package(jr_assert REQUIRED)
 find_package(span-lite 0.6.0 REQUIRED)
+find_package(jr_assert REQUIRED)
 
 # https://blog.kitware.com/cmake-and-the-default-build-type/
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -53,7 +54,7 @@ endif()
 string(CONCAT COMPILER_FLAGS "-Wall -Wextra -pedantic -Wfloat-equal "
     "-Wwrite-strings -Wswitch-enum -Wunreachable-code -Wconversion "
     "-Wcast-qual -Wstrict-overflow=5 -Werror=uninitialized "
-    "-Werror=return-type -pipe")
+    "-Werror=return-type -pipe -fdiagnostics-color")
 #  -fno-inline-functions
 
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fno-inline-functions ${COMPILER_FLAGS}")
@@ -88,15 +89,15 @@ add_library(profiler::profiler ALIAS profiler)
 
 # add_library(${PROJECT_NAME} src/wordsearch_solver.cpp include/wordsearch_solver.h)
 add_library(${PROJECT_NAME}
-  src/dictionary.cpp
+  # src/dictionary.cpp
   src/stringindexes.cpp
-  src/wordsearch_solver.cpp
   src/dictionary_std_set.cpp
   src/dictionary_std_vector.cpp
 
-  include/dictionary.h
+  # include/dictionary.h
   include/stringindexes.h
   include/wordsearch_solver.h
+  include/wordsearch_solver.tcc
   include/wordsearch_solver_defs.h
   include/dictionary_std_set.h
   include/dictionary_std_vector.h
@@ -111,12 +112,15 @@ add_library(${PROJECT_NAME}
 #  )
 # Needs to be here so that projects using this lib get these flags in their link flags
 target_compile_options(${PROJECT_NAME}
-    PRIVATE "-Werror=shadow")
+    PRIVATE "-Werror=shadow" "-Wno-gnu-zero-variadic-macro-arguments")
 # -Weffc++ gives a fair amount of dumb noise errors so disabled
     # PRIVATE "-Werror=shadow" "-Weffc++")
+
+add_subdirectory(trie)
+
 target_link_libraries(${PROJECT_NAME}
     PRIVATE jr_assert::jr_assert
-    PUBLIC profiler::profiler -lstdc++fs nonstd::span-lite trie::trie fmt::fmt
+    PUBLIC -Wno-gnu-zero-variadic-macro-arguments profiler::profiler -lstdc++fs nonstd::span-lite trie::trie fmt::fmt
   )
 #target_link_options(${PROJECT_NAME} BEFORE
 #  PRIVATE "-fsanitize=address,undefined")
@@ -127,8 +131,6 @@ add_library(wordsearch_solver::wordsearch_solver ALIAS ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME}
   PUBLIC ${PROJECT_SOURCE_DIR}/include)
 #    PRIVATE ${PROJECT_SOURCE_DIR}/src) # Internal headers?
-
-add_subdirectory(trie)
 
 # Argument parser
 add_subdirectory(Lyra)

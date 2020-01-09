@@ -12,6 +12,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <variant>
 
 //#include "prettyprint.hpp"
 #include <fmt/format.h>
@@ -24,8 +25,9 @@
 using namespace std::literals;
 
 #include "lyra/lyra.hpp"
+#include "wordsearch_solver_defs.h"
 #include "wordsearch_solver.h"
-#include "dictionary.h"
+//#include "dictionary.h"
 
 #include "dictionary_std_set.h"
 #include "dictionary_std_vector.h"
@@ -293,20 +295,29 @@ int main(int argc, char** argv)
 
   const auto vec = ::readlines(args.dictionary_path);
 
-  const wordsearch_solver::Dictionary dict = [&] ()
+  // template<class... Args>
+  // using TT = {Args...};
+
+  // const wordsearch_solver::Dictionary dict = [&] ()
+  using Dictionary = wordsearch_solver::Solver<
+    DictionaryStdSet, DictionaryStdVector, trie::CompactTrie>;
+  const Dictionary dict = [&] ()
   {
   if (args.backend == "stdset")
   {
-    return wordsearch_solver::Dictionary{DictionaryStdSet(vec)};
+    return Dictionary{DictionaryStdSet(vec)};
   } else if (args.backend == "stdvector")
   {
-    return wordsearch_solver::Dictionary{DictionaryStdVector(vec)};
+    return Dictionary{DictionaryStdVector(vec)};
   } else if (args.backend == "trie")
   {
-    return wordsearch_solver::Dictionary{TrieWrapper(vec)};
+    return Dictionary{trie::CompactTrie(vec)};
   } else
   {
     JR_ASSERT(false, "Unrecognised backend option {}", args.backend);
+    // TODO: replace my crappy macro with a better one of the internet :D
+    // And will allow us to add UNREACHABLE here
+    JR_UNREACHABLE();
   }
   }();
 
@@ -327,6 +338,8 @@ int main(int argc, char** argv)
   // ProfilerEnable();
   // ProfilerStart();
   ProfilerStart("/home/justin/cpp/wordsearch_solvercp/profile.prof");
+
+  // Solver{}.contains_and_further(dict,
   const auto a = wordsearch_solver::solve(dict, wordsearch);
   ProfilerStop();
 

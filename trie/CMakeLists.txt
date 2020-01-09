@@ -4,7 +4,8 @@ project(trie_main)
 
 add_subdirectory(trie)
 
-if(NOT CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+get_directory_property(hasParent PARENT_DIRECTORY)
+if(NOT hasParent)
 
     find_package(jr_assert REQUIRED)
     find_package(fmt REQUIRED)
@@ -34,7 +35,7 @@ if(NOT CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
     string(CONCAT COMPILER_FLAGS "-Wall -Wextra -pedantic -Wfloat-equal "
         "-Wwrite-strings -Wswitch-enum -Wunreachable-code -Wconversion "
         "-Wcast-qual -Wstrict-overflow=5 -Werror=uninitialized "
-        "-Werror=return-type -pipe")
+        "-Werror=return-type -pipe -fdiagnostics-color")
 
     set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 ${COMPILER_FLAGS}")
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -fno-omit-frame-pointer -march=native ${COMPILER_FLAGS}")

@@ -11,15 +11,17 @@ set -u -o pipefail
 # Getting again to place where optimised version is too fast for reliable
 # sampling. Perhaps time to make a new bigger test case?
 grep CMAKE_BUILD_TYPE build/CMakeCache.txt
+
 if [ $# -eq 0 ]
 then
     set -x
-    CPUPROFILE_FREQUENCY=10000 taskset 01 build/wordsearch_solver_main -w build/test/test_cases/long_words/wordsearch.txt -d build/test/test_cases/dictionary.txt -b trie -q
+    CPUPROFILE=profile.prof CPUPROFILE_FREQUENCY=10000 \
+        taskset 01 build/wordsearch_solver_main -w build/test/test_cases/smaller_test/wordsearch.txt -d build/test/test_cases/dictionary.txt -b trie -q
     exit 0
 fi
 
 set -x
-for arg in "$@"
-do
-    CPUPROFILE_FREQUENCY=10000 taskset 01 build/wordsearch_solver_main -w build/test/test_cases/long_words/wordsearch.txt -d build/test/test_cases/dictionary.txt -b "$arg" -q
-done
+# for arg in "$@"
+# do
+    # CPUPROFILE_FREQUENCY=10000 taskset 01 build/wordsearch_solver_main -w build/test/test_cases/long_words/wordsearch.txt -d build/test/test_cases/dictionary.txt -b "$arg" -q
+# done
