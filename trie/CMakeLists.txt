@@ -22,7 +22,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER
 
 target_link_libraries(${PROJECT_NAME}
     INTERFACE
-    wordsearch_solver::wordsearch_solver
     jr_assert::jr_assert
     fmt::fmt
     )
