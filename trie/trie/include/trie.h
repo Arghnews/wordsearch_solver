@@ -7,6 +7,7 @@
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
+#include <deque>
 #include <initializer_list>
 #include <iostream>
 #include <iterator>
@@ -30,6 +31,7 @@
 #include <range/v3/view/transform.hpp>
 #include <range/v3/view/view.hpp>
 #include <range/v3/view/zip.hpp>
+#include <set>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -63,6 +65,12 @@ struct TrieImpl
   std::vector<TrieImpl*> children_;
   char value_;
   bool is_end_of_word_;
+
+  std::size_t size_bytes() const
+  {
+    return sizeof(TrieImpl) +
+      children_.size() * sizeof(decltype(children_)::value_type);
+  }
 
   auto as_compressed() const
   {
@@ -346,6 +354,23 @@ class Trie
   [[nodiscard]] bool further(const std::string& key) const
   {
     return detail::has_children(this->lookup(key));
+  }
+
+  auto size_bytes() const
+  {
+    std::deque<const detail::TrieImpl*> nodes{&trie_};
+    std::size_t total = 0;
+    while (!nodes.empty())
+    {
+      total += nodes.front()->size_bytes();
+      for (const auto& child: nodes.front()->children_)
+      {
+        nodes.insert(nodes.end(), child->children_.begin(), child->children_
+            .end());
+      }
+      nodes.pop_front();
+    }
+    return total;
   }
 
   bool insert(const std::string_view word)
@@ -719,13 +744,26 @@ class CompactTrieImpl
 
       // Count nodes before this
       // log("row_it->begin() to elem_it\n");
-      const auto prior_nodes = std::accumulate(
-          row_it->begin(), elem_it,
-          0UL, [] (const auto acc, const auto& node)
-          {
-            log("Adding acc {} to count {}\n", acc, letters_bitset(node));
-            return acc + letters_bitset(node).count();
-          });
+
+      std::size_t prior_nodes = 0;
+      {
+        const auto first = row_it->begin();
+        const auto last = elem_it;
+        auto total = 0ULL;
+        for (auto i = first; i != last; ++i)
+        {
+          const auto bits = letters_bitset(*i);
+          total += bits.count();
+        }
+        prior_nodes = total;
+      }
+      // const auto prior_nodes = std::accumulate(
+          // row_it->begin(), elem_it,
+          // 0UL, [] (const auto acc, const auto& node)
+          // {
+            // log("Adding acc {} to count {}\n", acc, letters_bitset(node));
+            // return acc + letters_bitset(node).count();
+          // });
       letters_before = this_node + prior_nodes;
       log("letters_before {} = this_node {} + prior_nodes {}\n",
           letters_before, this_node, prior_nodes);
@@ -776,6 +814,36 @@ class CompactTrieImpl
 
     fmt::print("{}\n", *this);
     size_ = size;
+
+    fmt::print("Summary of compact trie:\n");
+    fmt::print("Size of trie: {} vs compact trie vector size: {}\n",
+        t.size(), compressed_.size());
+    fmt::print("Size of trie in bytes: {}\n", t.size_bytes());
+    fmt::print("Size of compact trie in bytes: {}\n",
+        compressed_.size() * sizeof(decltype(compressed_)::value_type));
+    for (const auto& [i, row]: rows_ | ranges::views::enumerate)
+    {
+      // const auto [first, last] = {level.begin(), level.end()};
+      // decltype(i)::n;
+      // decltype(level)::n;
+      fmt::print("Row {}: {}\n", i, row.size());
+      std::map<std::size_t, std::size_t> filled_by_n;
+      std::size_t empty_nodes_save_end_of_word = 0;
+      for (const auto& elem: row)
+      {
+        const auto bits = letters_bitset(elem);
+        const auto n = bits.count();
+        ++filled_by_n[n];
+        if (n == 0 && is_end_of_word(elem))
+        {
+          ++empty_nodes_save_end_of_word;
+        }
+      }
+      fmt::print("Number of empty nodes except for end of word: {}\n",
+          empty_nodes_save_end_of_word);
+      fmt::print("Summary of number of bits set vs frequency of node: {}\n",
+          filled_by_n);
+    }
 
     // ranges::views::zip(levels, ranges::views::tail(levels)) |
       // ranges::transform(
@@ -1135,7 +1203,7 @@ class CompactTrie
   {
     rebuild_if_updated();
     const auto ret = compact_trie_.contains(key);
-    assert(ret == trie_.contains(key));
+    // assert(ret == trie_.contains(key));
     return ret;
   }
 
@@ -1146,7 +1214,7 @@ class CompactTrie
     const auto ret = compact_trie_.further(key);
     // fmt::print("Testing if further {}, trie: {}, ctrie: {}\n", key,
         // trie_.further(key), ret);
-    assert(ret == trie_.further(key));
+    // assert(ret == trie_.further(key));
     return ret;
   }
 

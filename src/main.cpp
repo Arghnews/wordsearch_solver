@@ -183,6 +183,9 @@ std::vector<std::string> readlines(const std::filesystem::path& p)
   return lines;
 }
 
+template<class Args, class Dict>
+int templated_main(Args args, Dict dict);
+
 int main(int argc, char** argv)
 {
 
@@ -299,19 +302,22 @@ int main(int argc, char** argv)
   // using TT = {Args...};
 
   // const wordsearch_solver::Dictionary dict = [&] ()
-  using Dictionary = wordsearch_solver::Solver<
-    DictionaryStdSet, DictionaryStdVector, trie::CompactTrie>;
-  const Dictionary dict = [&] ()
-  {
+  // using Dictionary = wordsearch_solver::Solver<
+    // DictionaryStdSet, DictionaryStdVector, trie::CompactTrie>;
+  // const Dictionary dict = [&] ()
+  // {
   if (args.backend == "stdset")
   {
-    return Dictionary{DictionaryStdSet(vec)};
+    return templated_main(std::move(args), DictionaryStdSet{vec});
+    // return Dictionary{DictionaryStdSet(vec)};
   } else if (args.backend == "stdvector")
   {
-    return Dictionary{DictionaryStdVector(vec)};
+    return templated_main(std::move(args), DictionaryStdVector{vec});
+    // return Dictionary{DictionaryStdVector(vec)};
   } else if (args.backend == "trie")
   {
-    return Dictionary{trie::CompactTrie(vec)};
+    return templated_main(std::move(args), trie::CompactTrie{vec});
+    // return Dictionary{trie::CompactTrie(vec)};
   } else
   {
     JR_ASSERT(false, "Unrecognised backend option {}", args.backend);
@@ -319,11 +325,15 @@ int main(int argc, char** argv)
     // And will allow us to add UNREACHABLE here
     JR_UNREACHABLE();
   }
-  }();
+}
 
+template<class Args, class Dict>
+int templated_main(Args args, Dict dict)
+{
   // const auto dict = Trie(vec);
   // const auto dict = Trie(readlines(args.dictionary_path));
   fmt::print("Next line builds dict\n");
+  // Dict dict{
   // const wordsearch_solver::Dictionary dict = Trie(vec);
   // fmt::print("{}\n", dict);
   fmt::print("Prev line builds dict\n");
@@ -335,15 +345,15 @@ int main(int argc, char** argv)
 
   timer().start("Solve");
 
-  // ProfilerEnable();
+  ProfilerEnable();
+  // ProfilerStart("/home/justin/cpp/wordsearch_solvercp/profile.prof");
   // ProfilerStart();
-  ProfilerStart("/home/justin/cpp/wordsearch_solvercp/profile.prof");
 
   // Solver{}.contains_and_further(dict,
   const auto a = wordsearch_solver::solve(dict, wordsearch);
-  ProfilerStop();
+  // ProfilerStop();
 
-  // ProfilerDisable();
+  ProfilerDisable();
   auto a1 = a.words();
   timer().stop();
 
@@ -395,4 +405,5 @@ int main(int argc, char** argv)
   fmt::print("{}\n", sss);
   fmt::print("End of main\n");
 
+  return 0;
 }

@@ -494,7 +494,7 @@ wordsearch_solver::StringIndexes find_words(
     }
   }
 
-  ProfilerEnable();
+  // ProfilerEnable();
 
   Result result;
 
@@ -610,7 +610,7 @@ wordsearch_solver::StringIndexes find_words(
   }
 
 //  return {found_words, found_indexes};
-  ProfilerDisable();
+  // ProfilerDisable();
   return stringindexes;
 }
 
