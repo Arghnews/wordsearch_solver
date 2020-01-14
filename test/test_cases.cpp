@@ -94,7 +94,7 @@ TEST_CASE( "Check test inputs", "[input]")
 }
 
 TEMPLATE_TEST_CASE( "Test wordsearch/dict implementations", "[test]",
-    DictionaryStdSet, DictionaryStdVector, trie::CompactTrie)
+    DictionaryStdSet, DictionaryStdVector, trie::Trie, trie::CompactTrie)
 // DictionaryStdVector)
     // TrieWrapper)
     // DictionaryStdSet)
@@ -102,9 +102,9 @@ TEMPLATE_TEST_CASE( "Test wordsearch/dict implementations", "[test]",
   const auto dictionary_path = test_cases_dirname / dictionary_filename;
   const auto dict_words = sort_unique(::readlines(dictionary_path));
 
-  using Dictionary = wordsearch_solver::Solver<
-    DictionaryStdSet, DictionaryStdVector, trie::CompactTrie>;
-  const Dictionary dict{TestType{dict_words}};
+  // using Dictionary = wordsearch_solver::Solver<
+    // DictionaryStdSet, DictionaryStdVector, trie::CompactTrie>;
+  const TestType dict{dict_words};
   for (const auto &test_dir : fs::directory_iterator(test_cases_dirname))
   {
     if (!fs::is_directory(test_dir))

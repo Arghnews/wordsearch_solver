@@ -111,8 +111,8 @@ add_library(${PROJECT_NAME}
 #  PUBLIC_HEADER "include/wordsearch_solver.h include/stringindexes.h"
 #  )
 # Needs to be here so that projects using this lib get these flags in their link flags
-target_compile_options(${PROJECT_NAME}
-    PRIVATE "-Werror=shadow" "-Wno-gnu-zero-variadic-macro-arguments")
+# target_compile_options(${PROJECT_NAME}
+    # PRIVATE "-Werror=shadow" "-Wno-gnu-zero-variadic-macro-arguments")
 # -Weffc++ gives a fair amount of dumb noise errors so disabled
     # PRIVATE "-Werror=shadow" "-Weffc++")
 
@@ -120,7 +120,7 @@ add_subdirectory(trie)
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE jr_assert::jr_assert
-    PUBLIC -Wno-gnu-zero-variadic-macro-arguments profiler::profiler -lstdc++fs nonstd::span-lite trie::trie fmt::fmt
+    PUBLIC profiler::profiler -lstdc++fs nonstd::span-lite trie::trie fmt::fmt
   )
 #target_link_options(${PROJECT_NAME} BEFORE
 #  PRIVATE "-fsanitize=address,undefined")

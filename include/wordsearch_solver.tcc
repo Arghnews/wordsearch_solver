@@ -374,6 +374,9 @@ wordsearch_solver::StringIndexes find_words(
     const Dictionary& dictionary, const Grid& grid, const Index start)
 //    StringIndexes& stringindexes)
 {
+
+  // ProfilerEnable();
+
   //
   //
   //
@@ -609,7 +612,6 @@ wordsearch_solver::StringIndexes find_words(
     }
   }
 
-//  return {found_words, found_indexes};
   // ProfilerDisable();
   return stringindexes;
 }

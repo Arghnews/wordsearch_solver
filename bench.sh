@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -u -o pipefail
+set -o pipefail
 
 # https://unix.stackexchange.com/a/326585/358344
 # in /etc/default/grub: GRUB_CMDLINE_LINUX_DEFAULT+=" isolcpus=0"
@@ -12,13 +12,22 @@ set -u -o pipefail
 # sampling. Perhaps time to make a new bigger test case?
 grep CMAKE_BUILD_TYPE build/CMakeCache.txt
 
-if [ $# -eq 0 ]
+# if [ $# -eq 0 ]
+# then
+if [ -z "$1" ]
 then
+    echo "Must provide solver type"
+    exit 1
+fi
+
+for solver in "$@"
+do
     set -x
     CPUPROFILE=profile.prof CPUPROFILE_FREQUENCY=10000 \
-        taskset 01 build/wordsearch_solver_main -w build/test/test_cases/smaller_test/wordsearch.txt -d build/test/test_cases/dictionary.txt -b trie -q
-    exit 0
-fi
+        taskset 01 build/wordsearch_solver_main -w build/test/test_cases/long_words/wordsearch.txt -d build/test/test_cases/dictionary.txt -b "$solver" -q
+    done
+exit 0
+# fi
 
 set -x
 # for arg in "$@"

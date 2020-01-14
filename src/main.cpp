@@ -3,8 +3,8 @@
 #include <chrono>
 #include <cstddef>
 #include <filesystem>
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <map>
 #include <memory>
 #include <optional>
@@ -12,7 +12,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <variant>
 
 //#include "prettyprint.hpp"
 #include <fmt/format.h>
@@ -225,7 +224,7 @@ int main(int argc, char** argv)
     lyra::opt(args.backend, "Backend")
     ["-b"]["--backend"] ("Which backend solver to use for dict "
         "[stdset, trie, stdvector]")
-    .choices("stdset", "trie", "stdvector").required()
+    .choices("stdset", "trie", "stdvector", "compact_trie").required()
     ;
 
   auto result = cli.parse({argc, argv});
@@ -316,6 +315,10 @@ int main(int argc, char** argv)
     // return Dictionary{DictionaryStdVector(vec)};
   } else if (args.backend == "trie")
   {
+    return templated_main(std::move(args), trie::Trie{vec});
+    // return Dictionary{trie::CompactTrie(vec)};
+  } else if (args.backend == "compact_trie")
+  {
     return templated_main(std::move(args), trie::CompactTrie{vec});
     // return Dictionary{trie::CompactTrie(vec)};
   } else
@@ -325,6 +328,15 @@ int main(int argc, char** argv)
     // And will allow us to add UNREACHABLE here
     JR_UNREACHABLE();
   }
+}
+
+std::size_t should_not_see_this()
+{
+  std::vector<std::size_t> v(10'000'000);
+  std::iota(v.begin(), v.end(), 0);
+  std::vector<std::size_t> vv(10'000'000);
+  std::partial_sum(v.begin(), v.end(), vv.begin());
+  return vv.back();
 }
 
 template<class Args, class Dict>
@@ -343,17 +355,23 @@ int templated_main(Args args, Dict dict)
   // const auto wordsearch = grid;
   timer().stop();
 
+  const auto val = should_not_see_this();
+  fmt::print("Val is: {}\n", val);
+
   timer().start("Solve");
 
-  ProfilerEnable();
+  // ProfilerEnable();
+  // ProfilerDisable();
   // ProfilerStart("/home/justin/cpp/wordsearch_solvercp/profile.prof");
   // ProfilerStart();
 
   // Solver{}.contains_and_further(dict,
+  ProfilerRestartDisabled();
+  ProfilerEnable();
   const auto a = wordsearch_solver::solve(dict, wordsearch);
+  ProfilerDisable();
   // ProfilerStop();
 
-  ProfilerDisable();
   auto a1 = a.words();
   timer().stop();
 

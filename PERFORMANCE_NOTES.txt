@@ -1,0 +1,94 @@
+Performance thoughts as of 09c9836bc72f7831fb9381afafd44f78d89d3320
+
+     186  31.2%  31.2%      186  31.2% wordsearch_solver::find_words (inline) /home/justin/cpp/wordsearch_solvercp/build/../trie/trie/include/trie.h:753
+     136  22.8%  54.0%      136  22.8% __GI___libc_write /build/glibc-B9XfQf/glibc-2.28/io/../sysdeps/unix/sysv/linux/write.c:26
+     106  17.8%  71.8%      121  20.3% wordsearch_solver::find_words (inline) /home/justin/cpp/wordsearch_solvercp/build/../trie/trie/include/trie.h:756
+      94  15.8%  87.6%       94  15.8% wordsearch_solver::find_words (inline) /usr/include/c++/8/bitset:683
+
+trie.h
+     753:   for (auto i = first; i != last; ++i)
+         {
+           const auto bits = letters_bitset(*i);
+     756:    total += bits.count();
+
+bitset
+// Note to self, this is the constructor for a bitset, called from another bitset (passes __val as ULL)
+    struct _Sanitize_val<_Nb, true>
+    {
+      static constexpr unsigned long long
+      _S_do_sanitize_val(unsigned long long __val)
+ 683:   { return __val & ~((~static_cast<unsigned long long>(0)) << _Nb); }
+    };
+
+from: https://code.woboq.org/userspace/glibc/sysdeps/unix/sysv/linux/write.c.html
+__libc_write (int fd, const void *buf, size_t nbytes)
+// Ie. looks just like a system call to the generic write n bytes op
+{
+26:  return SYSCALL_CANCEL (write, fd, buf, nbytes);
+}
+
+Problem with current data structure/algo:
+    Rows are VERY wide ie. row 7 is 43702 * 4 bytes long.
+    Significant number of nodes have 0 or 1 bits set. If 0 they have EOW else wouldn't exist. Many have 2 bits set too.
+        The nodes with 0 bits set and just EOW are wasteful. We MUST have number of EOW bits == number of words in dictionary (~115,000). This results in many empty nodes.
+    When we find a letter in a row, we jump to the location of the node and check the letter.
+        However we then have to read ALL previous nodes in that row to find the offset for the next row.
+        This is made worse by the fact we can't (or it's non-trivial) do some nice SIMD because we must mask off/ignore the last bit in each bitset as it's EOW.
+    See summary_at_present.txt file and find ^Summary: for breakdown
+    Currently it takes ~21seconds to run the smaller test and god knows how long to do the larger test that the other solves do on the order of 50ms~
+
+[ac]
+[c][u]
+[e][pt]
+[|][s|][|]
+[|]
+
+Current storage for words [ace, cup, cut, cups]
+The pipe | means end of word bit
+
+Thoughts on improvements:
+Could write the preceding number of bits set after each node or after each n nodes in a row
+    Pros:
+        Won't have to scan from start of long row each time, each row lookup becomes O(1) or O(small constant) if say they are written every 8 nodes and nodes are small which they are
+    Cons:
+        Size of data structure will increase significantly as each node's size is now (assuming store as a 4byte int) doubled
+            26 bits for alphabet + end of word bit + 4 bytes for preceding count.
+            Could improve this immediately by storing only a short (2 bytes) taking 27 bits + 16 bits
+            For a "proper" impl. should have a way to extend this? (complex)
+            Suppose that for lowercase english anyway can do 27 bits + 16bits leaves 5 bits spare, 21 bit number is almost certainly big enough for any row (2,097,152)
+            Each node is then 6 bytes big.
+
+Removing end of word bit entirely. Allows SIMD (popcnt I believe) scanning for number of set bits. Rows still too big with this alone.
+Would then have to store where words end somehow else?
+Tries for each word size?
+Hashmap for finding exact words, trie for finding if further words exist?
+Could have iteration on original trie but essentially put it all in one block, ie vector<Node*> of size N -> bytes{N, offsets}
+    Space saving is vector on x64 is 3 * 8bytes (ptrs) = 24 bytes. N can be char, offsets say 4 bytes? Maybe get away with 2 bytes?
+
+
+"linked set of nodes, where each node contains an array of child pointers, one for each symbol in the alphabet (so for the English alphabet, one would store 26 child pointers and for the alphabet of bytes, 256 pointers). This is simple but wasteful in terms of memory: using the alphabet of bytes (size 256) and four-byte pointers, each node requires a kilobyte of storage, and"
+
+"a string of n bytes can alternatively be regarded as a string of 2n four-bit units and stored in a trie with sixteen pointers per node."
+"hi there" n = 8
+As ascii hex:   68 69 20 74 68 65 72 65
+n = 16, 4 bits each
+As ascii hex:   6 8  6 9  2 0  7 4  6 8  6 5  7 2  6 5
+
+node 0 - 255 ptrs to next nodes (ie. for a standard byte with ascii)
+https://docs.google.com/file/d/0BwfV7NNGKNRAczNjTDN1Q1ZibEU/edit
+Basic idea is for say
+
+Entries
+0010'1100        ->       0010 -> [1100, 1110]
+0010'1110
+
+
+----
+
+Going to try idea where we append a short (2 bytes) size of preceding items in row to each node so we don't have to count from start
+- With this idea implemented (was thankfully quite easy)
+  On Release build trie solver runs in 50ms vs compact_trie 70ms
+  This is with unoptimised and uncached contains_and_further function
+- Optimised contains_and_further - but still without cache - solver runs in 40ms compared to trie's 48ms (47-50)ms!
+  Arguably the cache won't make THAT much difference?
+  Should be last thing to do for this path without more significant rework
