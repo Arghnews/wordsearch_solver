@@ -7,11 +7,13 @@
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
+#include <deque>
 #include <initializer_list>
 #include <iostream>
 #include <iterator>
 #include <memory>
 #include <new>
+#include <limits>
 #include <ostream>
 #include <optional>
 #include <range/v3/algorithm/find_if.hpp>
@@ -30,6 +32,7 @@
 #include <range/v3/view/transform.hpp>
 #include <range/v3/view/view.hpp>
 #include <range/v3/view/zip.hpp>
+#include <set>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -63,6 +66,12 @@ struct TrieImpl
   std::vector<TrieImpl*> children_;
   char value_;
   bool is_end_of_word_;
+
+  std::size_t size_bytes() const
+  {
+    return sizeof(TrieImpl) +
+      children_.size() * sizeof(decltype(children_)::value_type);
+  }
 
   auto as_compressed() const
   {
@@ -348,6 +357,23 @@ class Trie
     return detail::has_children(this->lookup(key));
   }
 
+  auto size_bytes() const
+  {
+    std::deque<const detail::TrieImpl*> nodes{&trie_};
+    std::size_t total = 0;
+    while (!nodes.empty())
+    {
+      total += nodes.front()->size_bytes();
+      for (const auto& child: nodes.front()->children_)
+      {
+        nodes.insert(nodes.end(), child->children_.begin(), child->children_
+            .end());
+      }
+      nodes.pop_front();
+    }
+    return total;
+  }
+
   bool insert(const std::string_view word)
   {
     assert(!word.empty());
@@ -599,8 +625,25 @@ class Trie
   friend class CompactTrieImpl;
 };
 
+struct Compressed
+{
+  std::bitset<27> bits_;
+  unsigned short int preceding_;
+  using PrecedingType = unsigned short int;
+};
+
+static std::bitset<26> letters_bitset(const Compressed& bits)
+{
+  return std::bitset<26>{bits.bits_.to_ullong()};
+}
+
+static bool is_end_of_word(const Compressed& bits)
+{
+  return bits.bits_.test(26);
+}
+
 static auto make_rows(
-    const std::vector<std::bitset<27>>& compressed,
+    const std::vector<Compressed>& compressed,
     const std::vector<std::size_t>& levels)
 {
   // Difficult (nigh on impossible) to use actual types and not auto/templates
@@ -623,7 +666,8 @@ static auto make_rows(
 class CompactTrieImpl
 {
   public:
-  using Compressed = std::bitset<27>;
+  // using Compressed = std::bitset<27>;
+
   using CompressedVectorIterator = std::vector<Compressed>::const_iterator;
   using Rows = std::invoke_result_t<
     decltype(make_rows),
@@ -632,16 +676,6 @@ class CompactTrieImpl
   using RowIterator = Rows::const_iterator;
 
   CompactTrieImpl() = default;
-
-  static std::bitset<26> letters_bitset(const std::bitset<27>& bits)
-  {
-    return std::bitset<26>{bits.to_ullong()};
-  };
-
-  static bool is_end_of_word(const std::bitset<27>& bits)
-  {
-    return bits.test(26);
-  };
 
   // Returns a tuple, if the bool is false then word wasn't found, values
   // unspecified.
@@ -661,9 +695,9 @@ class CompactTrieImpl
     }
   }
 
-  // template<class Rows>
   static
-  std::tuple<bool, CompressedVectorIterator, CompressedVectorIterator>
+  std::tuple<bool, CompressedVectorIterator, CompressedVectorIterator,
+    RowIterator>
   find_word(const Rows& rows, const std::string& word)
   {
     log("\nFinding word: {}\n", word);
@@ -673,7 +707,8 @@ class CompactTrieImpl
     if (word.empty() /*|| word.size() > rows.size()*/)
     {
       log("Word was empty, didn't find it\n");
-      return {false, {}, {}};
+      // std::cerr << "Passed empty word! in find_word" << "\n";
+      return {false, {}, {}, {}};
     }
     // rows.size() > word.size()
 
@@ -705,7 +740,7 @@ class CompactTrieImpl
       if (!letter_bits.test(letter))
       {
         log("Didn't find it\n");
-        return {false, {}, {}};
+        return {false, {}, {}, {}};
       }
 
       // Count nodes before and including this
@@ -719,13 +754,30 @@ class CompactTrieImpl
 
       // Count nodes before this
       // log("row_it->begin() to elem_it\n");
-      const auto prior_nodes = std::accumulate(
-          row_it->begin(), elem_it,
-          0UL, [] (const auto acc, const auto& node)
-          {
-            log("Adding acc {} to count {}\n", acc, letters_bitset(node));
-            return acc + letters_bitset(node).count();
-          });
+
+      const std::size_t prior_nodes = elem_it->preceding_;
+
+      // Vast majority of program time was here
+      // std::size_t prior_nodes = 0;
+      // {
+        // const auto first = row_it->begin();
+        // const auto last = elem_it;
+        // auto total = 0ULL;
+        // for (auto i = first; i != last; ++i)
+        // {
+          // const auto bits = letters_bitset(*i);
+          // total += bits.count();
+        // }
+        // prior_nodes = total;
+      // }
+
+      // const auto prior_nodes = std::accumulate(
+          // row_it->begin(), elem_it,
+          // 0UL, [] (const auto acc, const auto& node)
+          // {
+            // log("Adding acc {} to count {}\n", acc, letters_bitset(node));
+            // return acc + letters_bitset(node).count();
+          // });
       letters_before = this_node + prior_nodes;
       log("letters_before {} = this_node {} + prior_nodes {}\n",
           letters_before, this_node, prior_nodes);
@@ -743,7 +795,7 @@ class CompactTrieImpl
     }
 
     log("Found it!\n");
-    return {true, elem_it, next_elem_it};
+    return {true, elem_it, next_elem_it, row_it};
   }
 
   explicit CompactTrieImpl(const Trie& t)
@@ -760,10 +812,18 @@ class CompactTrieImpl
       fmt::print("Level {}\n", levels.size());
       const auto level_size = q.size();
       levels.push_back(compressed_.size());
+
+      // For item in row
+      using IntType = Compressed::PrecedingType;
+      IntType bits_on = 0;
       for (const auto& item: q)
       {
-        fmt::print("Pushing back {}\n", print_bitset(item->as_compressed()));
-        compressed_.push_back(item->as_compressed());
+        // fmt::print("Pushing back {}\n", print_bitset(item->as_compressed()));
+        const std::bitset<27> bits = item->as_compressed();
+        assert(bits_on < std::numeric_limits<IntType>::max());
+        Compressed c{bits, bits_on};
+        compressed_.push_back(c);
+        bits_on += letters_bitset(c).count();
         next_level.insert(next_level.end(), item->children_.begin(),
             item->children_.end());
       }
@@ -774,8 +834,38 @@ class CompactTrieImpl
 
     rows_ = make_rows(compressed_, levels);
 
-    fmt::print("{}\n", *this);
+    // fmt::print("{}\n", *this);
     size_ = size;
+
+    fmt::print("Summary of compact trie:\n");
+    fmt::print("Size of trie: {} vs compact trie vector size: {}\n",
+        t.size(), compressed_.size());
+    fmt::print("Size of trie in bytes: {}\n", t.size_bytes());
+    fmt::print("Size of compact trie in bytes: {}\n",
+        compressed_.size() * sizeof(decltype(compressed_)::value_type));
+    for (const auto& [i, row]: rows_ | ranges::views::enumerate)
+    {
+      // const auto [first, last] = {level.begin(), level.end()};
+      // decltype(i)::n;
+      // decltype(level)::n;
+      fmt::print("Row {}: {}\n", i, row.size());
+      std::map<std::size_t, std::size_t> filled_by_n;
+      std::size_t empty_nodes_save_end_of_word = 0;
+      for (const auto& elem: row)
+      {
+        const auto bits = letters_bitset(elem);
+        const auto n = bits.count();
+        ++filled_by_n[n];
+        if (n == 0 && is_end_of_word(elem))
+        {
+          ++empty_nodes_save_end_of_word;
+        }
+      }
+      fmt::print("Number of empty nodes except for end of word: {}\n",
+          empty_nodes_save_end_of_word);
+      fmt::print("Summary of number of bits set vs frequency of node: {}\n",
+          filled_by_n);
+    }
 
     // ranges::views::zip(levels, ranges::views::tail(levels)) |
       // ranges::transform(
@@ -970,7 +1060,7 @@ class CompactTrieImpl
   {
     assert(!key.empty() && "Whether or not searching for the empty string "
         "makes sense, for now it's unsupported as it's likely a bug");
-    const auto [found, _, next_it] = find_word(rows_, key);
+    const auto [found, _0, next_it, _1] = find_word(rows_, key);
     if (found)
     {
       return is_end_of_word(*next_it);
@@ -984,7 +1074,7 @@ class CompactTrieImpl
   {
     assert(!key.empty() && "Whether or not searching for the empty string "
         "makes sense, for now it's unsupported as it's likely a bug");
-    const auto [found, it, next_it] = find_word(rows_, key);
+    const auto [found, _0, next_it, _1] = find_word(rows_, key);
     if (found)
     {
       return letters_bitset(*next_it).count() > 0;
@@ -995,6 +1085,14 @@ class CompactTrieImpl
     // return std::bitset<26>{it->to_ullong()}.count();
   }
 
+  // struct CompactTrieImplIterator
+  // {
+    // const CompactTrieImpl* trie_;
+    // RowIterator row_;
+    // CompressedVectorIterator compressed_;
+
+  // };
+
   template<class OutputIndexIterator>
   void contains_and_further(const std::string& stem,
       const std::string& suffixes,
@@ -1002,12 +1100,89 @@ class CompactTrieImpl
       OutputIndexIterator further_out_it,
       OutputIndexIterator contains_and_further_out_it) const
   {
-    auto word = stem + '\0';
-    for (auto i = 0ULL; i < suffixes.size(); ++i)
+    // fmt::print("Searching for stem: {} stem and suffixes: {}\n", stem, suffixes);
+
+    if (rows_.empty()) return;
+    if (stem.empty())
     {
-      word.back() = suffixes[i];
-      const bool contains = this->contains(word);
-      const bool further = this->further(word);
+      for (const auto [i, c]: suffixes | ranges::views::enumerate)
+      {
+        const std::string s{c};
+        const auto contains = this->contains(s);
+        const auto further = this->further(s);
+        if (contains && further)
+        {
+          *contains_and_further_out_it++ = i;
+        } else if (contains)
+        {
+          *contains_out_it++ = i;
+        } else if (further)
+        {
+          *further_out_it++ = i;
+        }
+      }
+      return;
+    }
+
+    const auto [found, _, next_it, next_row_it] = find_word(rows_, stem);
+    if (!found)
+    {
+      return;
+    }
+
+    const auto row_end = (--rows_.end())->end();
+    // fmt::print("Found it at node {}\n", print_bitset(*it));
+    // fmt::print("Found next_it at node {}\n", print_bitset(*next_it));
+
+    auto follow = [&] (const auto it, const auto row_it, const auto letter_index)
+    {
+      const auto before_node = it->preceding_;
+      // fmt::print("before_node count: {}\n", before_node);
+      const auto before_in_node = (letters_bitset(*it)
+          << (26 - letter_index)).count();
+      // fmt::print("before_in_node count: {}\n", before_in_node);
+      const auto preceding = before_node + before_in_node;
+      // fmt::print("preceding {}\n", preceding);
+      // fmt::print("row_it was at row index: {}\n",
+          // std::distance(rows_.begin(), row_it) );
+      const auto next_row_it = std::next(row_it);
+      // fmt::print("next_row_it at row index: {}\n",
+          // std::distance(rows_.begin(), next_row_it) );
+      // fmt::print("rows_.size() {}\n", rows_.size());
+      if (next_row_it == rows_.end())
+      {
+        // fmt::print("next row == end\n");
+        return row_end;
+      }
+      const auto& row = *next_row_it;
+      const auto final_it = std::next(row.begin(), preceding);
+      // fmt::print("Final_it {} \n", print_bitset(*final_it));
+      return final_it;
+    };
+
+    // const auto stem_bits = letters_bitset(*next_it);
+    // auto next_iter = [](auto&&...) { return void(); };
+    for (const auto [i, c]: suffixes | ranges::views::enumerate)
+    {
+      // fmt::print("\nFor suffix {} finding suffix letter {}\n", i, c);
+      const auto letter_index = static_cast<std::size_t>(c - 97);
+      const auto has_suffix = letters_bitset(*next_it).test(letter_index);
+      bool contains = false;
+      bool further = false;
+      if (has_suffix)
+      {
+        // fmt::print("has_suffix \"{}\" is true, finding last_it\n", c);
+        const auto last_it = follow(next_it, next_row_it, letter_index);
+        if (last_it != row_end)
+        {
+          // fmt::print("last_it: {}\n", print_bitset(*last_it));
+          contains = is_end_of_word(*last_it);
+          further = letters_bitset(*last_it).count();
+          // fmt::print("Contains is end of word: {}\n", contains);
+          // fmt::print("Further on last_it: {}\n", further);
+        }
+      }
+
       if (contains && further)
       {
         *contains_and_further_out_it++ = i;
@@ -1018,8 +1193,27 @@ class CompactTrieImpl
       {
         *further_out_it++ = i;
       }
+      // fmt::print("contains, further {} {}\n", contains, further);
     }
-    word.pop_back();
+
+    // auto word = stem + '\0';
+    // for (auto i = 0ULL; i < suffixes.size(); ++i)
+    // {
+      // word.back() = suffixes[i];
+      // const bool contains = this->contains(word);
+      // const bool further = this->further(word);
+      // if (contains && further)
+      // {
+        // *contains_and_further_out_it++ = i;
+      // } else if (contains)
+      // {
+        // *contains_out_it++ = i;
+      // } else if (further)
+      // {
+        // *further_out_it++ = i;
+      // }
+    // }
+    // word.pop_back();
   }
 
   static std::string print_bitset(std::bitset<26> b)
@@ -1049,6 +1243,12 @@ class CompactTrieImpl
     return s;
   }
 
+  // static std::string print_bitset(std::bitset<27> b)
+  static std::string print_bitset(const Compressed& b)
+  {
+    return print_bitset(b.bits_) + "(" + std::to_string(b.preceding_) + ")";
+  }
+
   friend std::ostream& operator<<(std::ostream& os, const CompactTrieImpl& c)
   {
     ranges::for_each(c.rows_,
@@ -1057,7 +1257,7 @@ class CompactTrieImpl
           ranges::for_each(row,
               [&] (const auto& elem)
               {
-                os << print_bitset(elem);
+                os << print_bitset(elem) << ", ";
               });
           os << "\n";
         }
@@ -1067,12 +1267,7 @@ class CompactTrieImpl
 
   std::vector<Compressed> compressed_;
   std::size_t size_;
-  // Yikes...
-  std::invoke_result_t<
-    decltype(make_rows),
-    std::vector<Compressed>,
-    std::vector<std::size_t>
-      > rows_;
+  Rows rows_;
 };
 
 // Nasty wrapper for now to see
@@ -1135,7 +1330,7 @@ class CompactTrie
   {
     rebuild_if_updated();
     const auto ret = compact_trie_.contains(key);
-    assert(ret == trie_.contains(key));
+    // assert(ret == trie_.contains(key));
     return ret;
   }
 
@@ -1146,7 +1341,7 @@ class CompactTrie
     const auto ret = compact_trie_.further(key);
     // fmt::print("Testing if further {}, trie: {}, ctrie: {}\n", key,
         // trie_.further(key), ret);
-    assert(ret == trie_.further(key));
+    // assert(ret == trie_.further(key));
     return ret;
   }
 

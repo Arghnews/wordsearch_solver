@@ -555,26 +555,50 @@ static int tests()
           "Error in test setup, {} not in vector", s);
       return s;
     };
+  }
+
+  {
+    fmt::print("----------------\n");
+    const std::vector<std::string> bla{
+      "ahem",
+      "ahe",
+      "aheaaa",
+      "ahem",
+    };
+    fmt::print("Inserting {}\n", bla);
+    const TrieType t{bla};
+    fmt::print("Trie: {}\n", t);
+
+    struct ContainsAndFurtherResult
     {
-      struct
-      {
-        std::vector<std::size_t> contains;
-        std::vector<std::size_t> further;
-        std::vector<std::size_t> contains_and_further;
-      } result;
-      t.contains_and_further(str("ahe"), "amz",
+      std::vector<std::size_t> contains;
+      std::vector<std::size_t> further;
+      std::vector<std::size_t> contains_and_further;
+    };
+
+    {
+      ContainsAndFurtherResult result;
+      t.contains_and_further("ahe", "amz",
           std::back_inserter(result.contains),
           std::back_inserter(result.further),
           std::back_inserter(result.contains_and_further)
           );
-      fmt::print("{}\n", result.contains);
-      fmt::print("{}\n", result.further);
-      fmt::print("{}\n", result.contains_and_further);
+      fmt::print("Contains: {}\n", result.contains);
+      fmt::print("Further: {}\n", result.further);
+      fmt::print("Contains and Further: {}\n", result.contains_and_further);
       JR_ASSERT(result.contains.size() == 1 && result.contains.at(0) == 1);
       JR_ASSERT(result.further.size() == 1);
       JR_ASSERT(result.contains_and_further.size() == 0);
     }
 
+    {
+      ContainsAndFurtherResult result;
+      t.contains_and_further("", "ab",
+          std::back_inserter(result.contains),
+          std::back_inserter(result.further),
+          std::back_inserter(result.contains_and_further)
+          );
+    }
   }
 
   {
