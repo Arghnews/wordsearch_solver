@@ -30,7 +30,9 @@ using namespace std::literals;
 
 #include "dictionary_std_set.h"
 #include "dictionary_std_vector.h"
+#include "dictionary_std_unordered_map.h"
 #include "trie.h"
+#include "compact_trie2.hpp"
 
 #include <gperftools/profiler.h>
 
@@ -223,8 +225,9 @@ int main(int argc, char** argv)
     |
     lyra::opt(args.backend, "Backend")
     ["-b"]["--backend"] ("Which backend solver to use for dict "
-        "[stdset, trie, stdvector]")
-    .choices("stdset", "trie", "stdvector", "compact_trie").required()
+        "[stdset, trie, compact_trie2, stdvector, compact_trie, stdunorderedmap]")
+    .choices("stdset", "trie", "compact_trie2", "stdvector", "compact_trie",
+        "stdunorderedmap").required()
     ;
 
   auto result = cli.parse({argc, argv});
@@ -309,19 +312,33 @@ int main(int argc, char** argv)
   {
     return templated_main(std::move(args), DictionaryStdSet{vec});
     // return Dictionary{DictionaryStdSet(vec)};
-  } else if (args.backend == "stdvector")
+  }
+  else if (args.backend == "stdvector")
   {
     return templated_main(std::move(args), DictionaryStdVector{vec});
     // return Dictionary{DictionaryStdVector(vec)};
-  } else if (args.backend == "trie")
+  }
+  else if (args.backend == "compact_trie2")
+  {
+    return templated_main(std::move(args), CompactTrie2{vec});
+    // return Dictionary{trie::CompactTrie(vec)};
+  }
+  else if (args.backend == "trie")
   {
     return templated_main(std::move(args), trie::Trie{vec});
     // return Dictionary{trie::CompactTrie(vec)};
-  } else if (args.backend == "compact_trie")
+  }
+  else if (args.backend == "compact_trie")
   {
     return templated_main(std::move(args), trie::CompactTrie{vec});
     // return Dictionary{trie::CompactTrie(vec)};
-  } else
+  }
+  else if (args.backend == "stdunorderedmap")
+  {
+    return templated_main(std::move(args), DictionaryStdUnorderedMap{vec});
+    // return Dictionary{trie::CompactTrie(vec)};
+  }
+  else
   {
     JR_ASSERT(false, "Unrecognised backend option {}", args.backend);
     // TODO: replace my crappy macro with a better one of the internet :D

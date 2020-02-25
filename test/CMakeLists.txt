@@ -9,6 +9,7 @@ add_executable(the_test test_cases.cpp test_catch_main.cpp)
 # add_executable(the_test test_catch_main.cpp)
 target_link_libraries(the_test
   wordsearch_solver::wordsearch_solver
+  compact_trie2::compact_trie2
   Catch2::Catch2)
 
 # message("CMAKE_CURRENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}")

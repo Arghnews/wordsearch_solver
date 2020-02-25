@@ -100,13 +100,13 @@ struct TrieImpl
 
   TrieImpl(TrieImpl&& other) noexcept
   {
-    std::cout << "Move cons trie " << __PRETTY_FUNCTION__ << "\n";
+    // std::cout << "Move cons trie " << __PRETTY_FUNCTION__ << "\n";
     *this = std::move(other);
   }
 
   TrieImpl& operator=(TrieImpl&& other) noexcept
   {
-    std::cout << "Move assign op trie " << __PRETTY_FUNCTION__ << "\n";
+    // std::cout << "Move assign op trie " << __PRETTY_FUNCTION__ << "\n";
     children_ = std::move(other.children_);
     other.children_.clear();
     value_ = other.value_;
@@ -195,9 +195,9 @@ struct Cache
 
   ~Cache()
   {
-    std::cout << "Cache hits: " << hits << " vs misses: " << misses <<
-      " -- hits per miss: " <<
-      static_cast<double>(hits) / static_cast<double>(misses) << "" << "\n";
+    // std::cout << "Cache hits: " << hits << " vs misses: " << misses <<
+      // " -- hits per miss: " <<
+      // static_cast<double>(hits) / static_cast<double>(misses) << "" << "\n";
   }
 
   // inline
@@ -575,7 +575,7 @@ class Trie
 
   ~Trie()
   {
-    std::cout << "DELETION OCURRING " << __PRETTY_FUNCTION__ << "\n";
+    // std::cout << "DELETION OCURRING " << __PRETTY_FUNCTION__ << "\n";
   }
 
   friend std::ostream& operator<<(std::ostream& os, const Trie& c)
@@ -700,13 +700,13 @@ class CompactTrieImpl
     RowIterator>
   find_word(const Rows& rows, const std::string& word)
   {
-    log("\nFinding word: {}\n", word);
+    //log("\nFinding word: {}\n", word);
     // If the word is not found, returns an empty optional
     assert(!word.empty() && "Don't want to handle empty string search");
     // const auto last = compressed_.end();
     if (word.empty() /*|| word.size() > rows.size()*/)
     {
-      log("Word was empty, didn't find it\n");
+      //log("Word was empty, didn't find it\n");
       // std::cerr << "Passed empty word! in find_word" << "\n";
       return {false, {}, {}, {}};
     }
@@ -729,31 +729,31 @@ class CompactTrieImpl
     for (const auto c: word)
     {
       assert(97 <= c && c < 123 && "Must be lowercase ascii");
-      log("\n");
+      //log("\n");
       elem_it = next_elem_it;
       const auto letter = static_cast<std::size_t>(c) - 97;
       // assert(row.size() > static_cast<unsigned long>(letters_before));
       const auto letter_bits = letters_bitset(*elem_it);
 
-      log("Testing letter {} ({})\n", c, int(c));
+      //log("Testing letter {} ({})\n", c, int(c));
 
       if (!letter_bits.test(letter))
       {
-        log("Didn't find it\n");
+        //log("Didn't find it\n");
         return {false, {}, {}, {}};
       }
 
       // Count nodes before and including this
-      log("letter_bits {}\n", letter_bits);
-      // log("(letter_bits >> {}) {}\n", letter, letter_bits >> letter);
-      // log("(letter_bits >> {} + 1) {}\n", letter,
+      //log("letter_bits {}\n", letter_bits);
+      // //log("(letter_bits >> {}) {}\n", letter, letter_bits >> letter);
+      // //log("(letter_bits >> {} + 1) {}\n", letter,
       // letter_bits >> (letter + 1));
-      log("(letter_bits << {}) {}\n", letter, letter_bits << (26 - letter));
+      //log("(letter_bits << {}) {}\n", letter, letter_bits << (26 - letter));
       const auto this_node = (letter_bits << (26 - letter)).count();
-      log("letter_bits >> (letter + 1)).count(): {}\n", this_node);
+      //log("letter_bits >> (letter + 1)).count(): {}\n", this_node);
 
       // Count nodes before this
-      // log("row_it->begin() to elem_it\n");
+      // //log("row_it->begin() to elem_it\n");
 
       const std::size_t prior_nodes = elem_it->preceding_;
 
@@ -775,12 +775,12 @@ class CompactTrieImpl
           // row_it->begin(), elem_it,
           // 0UL, [] (const auto acc, const auto& node)
           // {
-            // log("Adding acc {} to count {}\n", acc, letters_bitset(node));
+            // //log("Adding acc {} to count {}\n", acc, letters_bitset(node));
             // return acc + letters_bitset(node).count();
           // });
       letters_before = this_node + prior_nodes;
-      log("letters_before {} = this_node {} + prior_nodes {}\n",
-          letters_before, this_node, prior_nodes);
+      //log("letters_before {} = this_node {} + prior_nodes {}\n",
+          // letters_before, this_node, prior_nodes);
 
       ++row_it;
       if (row_it == rows.end())
@@ -794,7 +794,7 @@ class CompactTrieImpl
       }
     }
 
-    log("Found it!\n");
+    //log("Found it!\n");
     return {true, elem_it, next_elem_it, row_it};
   }
 
@@ -807,9 +807,18 @@ class CompactTrieImpl
     compressed_.reserve(t.size() * sizeof(Compressed));
     std::size_t size = 0;
 
+    auto safe_uint_add = [](const auto acc, const auto added)
+    {
+      using T = decltype(acc);
+      assert(
+          static_cast<std::uintmax_t>(acc) + static_cast<std::uintmax_t>(added)
+          < std::numeric_limits<T>::max());
+      return static_cast<T>(acc + added);
+    };
+
     while (!q.empty())
     {
-      fmt::print("Level {}\n", levels.size());
+      // fmt::print("Level {}\n", levels.size());
       const auto level_size = q.size();
       levels.push_back(compressed_.size());
 
@@ -820,10 +829,9 @@ class CompactTrieImpl
       {
         // fmt::print("Pushing back {}\n", print_bitset(item->as_compressed()));
         const std::bitset<27> bits = item->as_compressed();
-        assert(bits_on < std::numeric_limits<IntType>::max());
         Compressed c{bits, bits_on};
         compressed_.push_back(c);
-        bits_on += letters_bitset(c).count();
+        bits_on = safe_uint_add(bits_on, letters_bitset(c).count());
         next_level.insert(next_level.end(), item->children_.begin(),
             item->children_.end());
       }
@@ -837,18 +845,18 @@ class CompactTrieImpl
     // fmt::print("{}\n", *this);
     size_ = size;
 
-    fmt::print("Summary of compact trie:\n");
-    fmt::print("Size of trie: {} vs compact trie vector size: {}\n",
-        t.size(), compressed_.size());
-    fmt::print("Size of trie in bytes: {}\n", t.size_bytes());
-    fmt::print("Size of compact trie in bytes: {}\n",
-        compressed_.size() * sizeof(decltype(compressed_)::value_type));
+    // fmt::print("Summary of compact trie:\n");
+    // fmt::print("Size of trie: {} vs compact trie vector size: {}\n",
+        // t.size(), compressed_.size());
+    // fmt::print("Size of trie in bytes: {}\n", t.size_bytes());
+    // fmt::print("Size of compact trie in bytes: {}\n",
+        // compressed_.size() * sizeof(decltype(compressed_)::value_type));
     for (const auto& [i, row]: rows_ | ranges::views::enumerate)
     {
       // const auto [first, last] = {level.begin(), level.end()};
       // decltype(i)::n;
       // decltype(level)::n;
-      fmt::print("Row {}: {}\n", i, row.size());
+      // fmt::print("Row {}: {}\n", i, row.size());
       std::map<std::size_t, std::size_t> filled_by_n;
       std::size_t empty_nodes_save_end_of_word = 0;
       for (const auto& elem: row)
@@ -861,10 +869,10 @@ class CompactTrieImpl
           ++empty_nodes_save_end_of_word;
         }
       }
-      fmt::print("Number of empty nodes except for end of word: {}\n",
-          empty_nodes_save_end_of_word);
-      fmt::print("Summary of number of bits set vs frequency of node: {}\n",
-          filled_by_n);
+      // fmt::print("Number of empty nodes except for end of word: {}\n",
+          // empty_nodes_save_end_of_word);
+      // fmt::print("Summary of number of bits set vs frequency of node: {}\n",
+          // filled_by_n);
     }
 
     // ranges::views::zip(levels, ranges::views::tail(levels)) |
@@ -993,7 +1001,7 @@ class CompactTrieImpl
       // return total;
     // };
 
-    // log("\nSearching for {}", needle);
+    // //log("\nSearching for {}", needle);
 
     // // auto it = compressed_.begin();
     // auto row_start = compressed_.begin();
@@ -1005,45 +1013,45 @@ class CompactTrieImpl
 
     // for (; first != last; ++first)
     // {
-      // log("\nIn iter for *first: {} at index: {}\n", *first,
+      // //log("\nIn iter for *first: {} at index: {}\n", *first,
           // std::distance(compressed_.begin(), row_start));
 
-      // log("row_start {}\n", std::distance(compressed_.begin(), row_start));
-      // log("row_end {}\n", std::distance(compressed_.begin(), row_end));
-      // log("row_offset {}\n", row_offset);
-      // log("current_pos {}\n",
+      // //log("row_start {}\n", std::distance(compressed_.begin(), row_start));
+      // //log("row_end {}\n", std::distance(compressed_.begin(), row_end));
+      // //log("row_offset {}\n", row_offset);
+      // //log("current_pos {}\n",
          // std::distance(compressed_.begin(), current_pos));
 
       // const auto total_before = count_set(row_start, row_start + row_offset);
-      // log("total_before {}\n", total_before);
+      // //log("total_before {}\n", total_before);
 
       // const auto letter_index = static_cast<std::size_t>(*first - 97);
-      // log("letter_index {}\n", letter_index);
+      // //log("letter_index {}\n", letter_index);
       // const std::bitset<26> b = (*(row_start + row_offset)).to_ullong();
-      // log("Bitset of letter without end_of_word {}\n", b);
+      // //log("Bitset of letter without end_of_word {}\n", b);
 
       // if (first + 1 == last && b.test(letter_index))
       // {
-        // log("Done! Found!\n");
+        // //log("Done! Found!\n");
         // // return current_pos;
       // }
       // if (!b.test(letter_index))
       // {
-        // // log("No letter_index {} in b {} ({}), returning end\n",
+        // // //log("No letter_index {} in b {} ({}), returning end\n",
             // // letter_index, b, print_bitset(b));
         // // return compressed_.end();
       // }
 
       // // Nasty casts just for now
-      // log("b: {}\n", b);
-      // log("before_bitset: {}\n", b >> (letter_index));
-      // log("after_bitset: {}\n", b << (b.size() - letter_index));
+      // //log("b: {}\n", b);
+      // //log("before_bitset: {}\n", b >> (letter_index));
+      // //log("after_bitset: {}\n", b << (b.size() - letter_index));
       // const auto before = (unsigned long)((b >> (letter_index)).count());
       // const auto after = (unsigned long)((b << (b.size() - letter_index)).count());
-      // log("before: {}, after: {}\n", before, after);
+      // //log("before: {}, after: {}\n", before, after);
 
       // const auto total_after = count_set(row_start + row_offset + 1, row_end);
-      // log("total_before: {}, total_after: {}\n", total_before, total_after);
+      // //log("total_before: {}, total_after: {}\n", total_before, total_after);
 
       // row_start = row_end;
       // row_offset = total_before + before - 1;
@@ -1155,7 +1163,8 @@ class CompactTrieImpl
         return row_end;
       }
       const auto& row = *next_row_it;
-      const auto final_it = std::next(row.begin(), preceding);
+      const auto final_it = std::next(row.begin(),
+          static_cast<long>(preceding));
       // fmt::print("Final_it {} \n", print_bitset(*final_it));
       return final_it;
     };

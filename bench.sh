@@ -14,9 +14,13 @@ grep CMAKE_BUILD_TYPE build/CMakeCache.txt
 
 # if [ $# -eq 0 ]
 # then
+
+binary=build/wordsearch_solver_main
+
 if [ -z "$1" ]
 then
     echo "Must provide solver type"
+    $binary --help
     exit 1
 fi
 

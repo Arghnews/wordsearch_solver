@@ -26,7 +26,7 @@ find_package(Catch2 REQUIRED)
 find_package(Boost 1.70.0 REQUIRED QUIET) # COMPONENTS container)
 find_package(jr_assert REQUIRED)
 find_package(span-lite 0.6.0 REQUIRED)
-find_package(jr_assert REQUIRED)
+find_package(benchmark REQUIRED)
 
 # https://blog.kitware.com/cmake-and-the-default-build-type/
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -58,10 +58,10 @@ string(CONCAT COMPILER_FLAGS "-Wall -Wextra -pedantic -Wfloat-equal "
 #  -fno-inline-functions
 
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fno-inline-functions ${COMPILER_FLAGS}")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -fno-omit-frame-pointer -march=native ${COMPILER_FLAGS}")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DNDEBUG -g -O2 -fno-omit-frame-pointer -march=native ${COMPILER_FLAGS}")
 # set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -fno-inline-functions -fno-omit-frame-pointer -march=native ${COMPILER_FLAGS}")
 # set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DNDEBUG -O3 -march=native ${COMPILER_FLAGS}")
-set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3 -march=native ${COMPILER_FLAGS}")
+set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3 -g -march=native ${COMPILER_FLAGS}")
 
 set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-fsanitize=address,undefined")
 # set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-fsanitize=address,undefined")
@@ -93,6 +93,7 @@ add_library(${PROJECT_NAME}
   src/stringindexes.cpp
   src/dictionary_std_set.cpp
   src/dictionary_std_vector.cpp
+  src/dictionary_std_unordered_map.cpp
 
   # include/dictionary.h
   include/stringindexes.h
@@ -101,6 +102,7 @@ add_library(${PROJECT_NAME}
   include/wordsearch_solver_defs.h
   include/dictionary_std_set.h
   include/dictionary_std_vector.h
+  include/dictionary_std_unordered_map.h
   )
 
 # Using this to set files for IDE
@@ -117,6 +119,7 @@ add_library(${PROJECT_NAME}
     # PRIVATE "-Werror=shadow" "-Weffc++")
 
 add_subdirectory(trie)
+add_subdirectory(compact_trie2)
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE jr_assert::jr_assert
@@ -125,6 +128,10 @@ target_link_libraries(${PROJECT_NAME}
 #target_link_options(${PROJECT_NAME} BEFORE
 #  PRIVATE "-fsanitize=address,undefined")
 add_library(wordsearch_solver::wordsearch_solver ALIAS ${PROJECT_NAME})
+
+add_executable(${PROJECT_NAME}_bench bench/bench.cpp)
+target_link_libraries(${PROJECT_NAME}_bench
+    wordsearch_solver::wordsearch_solver trie::trie compact_trie2::compact_trie2 benchmark::benchmark)
 
 # message("in word_trie_lib PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR}")
 
@@ -140,6 +147,7 @@ add_executable(${PROJECT_NAME}_main src/main.cpp)
 target_link_libraries(${PROJECT_NAME}_main
   profiler::profiler
   wordsearch_solver::wordsearch_solver
+  compact_trie2::compact_trie2
   BFG::Lyra
   jr_assert::jr_assert
   fmt::fmt

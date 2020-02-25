@@ -11,8 +11,10 @@
 #include "wordsearch_solver.h"
 
 #include "dictionary_std_set.h"
+#include "dictionary_std_unordered_map.h"
 #include "dictionary_std_vector.h"
 #include "trie.h"
+#include "compact_trie2.hpp"
 
 using namespace std::literals;
 
@@ -94,7 +96,9 @@ TEST_CASE( "Check test inputs", "[input]")
 }
 
 TEMPLATE_TEST_CASE( "Test wordsearch/dict implementations", "[test]",
-    DictionaryStdSet, DictionaryStdVector, trie::Trie, trie::CompactTrie)
+    DictionaryStdSet, DictionaryStdVector, trie::Trie, trie::CompactTrie,
+    DictionaryStdUnorderedMap, CompactTrie2
+    )
 // DictionaryStdVector)
     // TrieWrapper)
     // DictionaryStdSet)
