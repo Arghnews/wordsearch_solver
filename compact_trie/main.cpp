@@ -17,13 +17,13 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
-#include "compact_trie2.hpp"
+#include "compact_trie.hpp"
 
 using namespace std::literals;
 
 int main()
 {
-  using TrieType = CompactTrie2;
+  using TrieType = compact_trie::CompactTrie;
 
   struct ContainsAndFurtherResult
   {
@@ -100,12 +100,14 @@ int main()
     // fmt::print("DONE\n");
     // return 0;
 
-    fmt::print("Trie: {}\n", t);
+    fmt::print("\nTrie: {}\n", t);
     assert(t.size() == 2);
     assert(!t.contains("lap"));
     assert(!t.contains("laplan"));
     assert(t.contains("lapland"));
     assert(!t.contains("laplanda"));
+    assert(!t.contains("laplandb"));
+    assert(!t.contains("laplandab"));
     const auto word = "lapland"s;
     const bool found = t.contains(word);
     if (found)
@@ -167,9 +169,13 @@ int main()
       { "activate",  true,  false, },
       { "activates", false, false, },
     };
+    fmt::print("Trie: {}\n", t);
     for (const auto [substring, contains_answer, contains_prefix_answer]: v)
     {
+      fmt::print("Izzard: {} {} {}\n", substring, contains_answer, contains_prefix_answer);
+      fmt::print("Contains:\n");
       assert(t.contains(substring) == contains_answer);
+      fmt::print("Further:\n");
       assert(t.further(substring) == contains_prefix_answer);
           // ,"substring: {}, expected: {} {}", substring, contains_answer,
           // contains_prefix_answer);
@@ -214,13 +220,7 @@ int main()
   {
     const std::set<std::string> w{"hi", "there", "chum"};
     const TrieType t{w.begin(), w.end()};
-    // const auto v = t.as_vector();
-    // assert(std::equal(w.begin(), w.end(), v.begin(), v.end()));
-  }
-
-  {
-    const std::set<std::string> w{"hi", "there", "chum"};
-    const TrieType t{w.begin(), w.end()};
+    fmt::print("Trie: {}\n", t);
     // const auto v = t.as_vector();
     // assert(std::equal(w.begin(), w.end(), v.begin(), v.end()));
     assert(!t.further("y"));
@@ -377,7 +377,9 @@ int main()
   }
 
   {
+    fmt::print("\nMaking empty trie:\n");
     const TrieType t{""};
+    fmt::print("Empty trie: {}\n", t);
     assert(t.contains(""));
     assert(!t.further(""));
     fmt::print("Trie with empty string as only elem: {}\n", t);
@@ -409,5 +411,18 @@ int main()
       assert(result.further.size() == 0);
       assert(result.contains_and_further.empty());
     }
+  }
+
+  {
+    const TrieType t{"aaa", "aab", "aabx", "aaby", "aabz", "aabxa", "aabxb",
+      "aabyc", "aabyd", "aac"};
+    fmt::print("Trie: {}\n", t);
+    assert(!t.further("aaa"));
+    assert(!t.further("aac"));
+    assert(t.further("aabx"));
+    assert(t.further("aaby"));
+    assert(!t.further("aabz"));
+    assert(!t.further("aabyc"));
+    assert(!t.further("aabycd"));
   }
 }

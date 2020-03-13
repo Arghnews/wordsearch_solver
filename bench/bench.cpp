@@ -17,6 +17,7 @@
 #include "dictionary_std_vector.h"
 #include "trie.h"
 #include "compact_trie2.hpp"
+#include "compact_trie.hpp"
 
 using namespace std::literals;
 
@@ -64,11 +65,11 @@ void bench_long_words(benchmark::State& state, const Dict& dict,
     // ->Repetitions(static_cast<int>(numb_threads))
     // ->MinTime(1)
 
-BENCH_SOLVER(trie::CompactTrie)
+BENCH_SOLVER(compact_trie::CompactTrie)
 BENCH_SOLVER(CompactTrie2)
 BENCH_SOLVER(trie::Trie)
-// BENCH_SOLVER(DictionaryStdVector)
-// BENCH_SOLVER(DictionaryStdSet)
+BENCH_SOLVER(DictionaryStdVector)
+BENCH_SOLVER(DictionaryStdSet)
 // BENCH_SOLVER(DictionaryStdUnorderedMap)
 
 #undef BENCH_SOLVER

@@ -413,8 +413,8 @@ wordsearch_solver::StringIndexes find_words(
     return row_max_width * index.first + index.second;
   };
 
-  std::vector<std::string> found_words{};
-  std::vector<std::vector<Index>> found_indexes{};
+  // std::vector<std::string> found_words{};
+  // std::vector<std::vector<Index>> found_indexes{};
   std::vector<std::vector<Index>> a{};
   std::array<Index, 8> next_indexes{};
 
@@ -700,6 +700,67 @@ Grid grid_from_file(const std::filesystem::path& wordsearch_file)
 
 //sortable
 //to_string() / operator std::string()
+
+// template<class Dict, class Grid>
+// class Solver1
+// {
+  // public:
+  // Solver1(const Dict& dict, const Grid& grid)
+  // {
+    // JR_ASSERT(!grid->empty());
+    // const auto row_max_width = std::max_element(grid->begin(), grid->end(),
+        // [] (const auto& row1, const auto& row2)
+        // {
+          // return row1.size() >= row2.size();
+        // })->size();
+    // const auto number_of_rows = grid->size();
+    // tail_indexes_matrix = {row_max_width * number_of_rows};
+
+  // }
+
+  // private:
+
+  // std::size_t index_to_matrix_index(const Index index) const
+  // {
+    // return row_max_width * index.first + index.second;
+  // }
+
+  // char index_to_char(const Index index) const
+  // {
+    // return grid->at(index.first).at(index.second);
+  // }
+
+  // void push_back_on_tail(const Index index)
+  // {
+    // tail_indexes.push_back(index);
+    // tail_word.push_back(index_to_char(index));
+    // tail_indexes_matrix.set(index_to_matrix_index(index));
+    // JR_ASSERT(contains_no_duplicates(tail_indexes), "Added {}", index);
+  // }
+
+  // void pop_back_off_tail()
+  // {
+    // JR_ASSERT(!tail_indexes.empty());
+    // // CAREFUL. Do not reorder .set() and the .pop_back() for obvious reasons
+    // const auto& index = tail_indexes.back();
+    // tail_indexes_matrix.reset(index_to_matrix_index(index));
+    // tail_indexes.pop_back();
+    // tail_word.pop_back();
+  // }
+
+  // boost::dynamic_bitset<> tail_indexes_matrix;
+  // std::vector<std::vector<Index>> a;
+  // std::array<Index, 8> next_indexes;
+
+  // std::vector<Index> tail_indexes;
+  // std::string tail_word;
+  // std::vector<Index> new_layer;
+  // Result result;
+
+  // Dict dict;
+  // Grid grid;
+  // std::size_t row_max_width;
+// };
 
 } // namespace wordsearch_solver
 

@@ -24,7 +24,7 @@ find_package(fmt REQUIRED)
 # find_package(spdlog REQUIRED)
 find_package(Catch2 REQUIRED)
 find_package(Boost 1.70.0 REQUIRED QUIET) # COMPONENTS container)
-find_package(jr_assert REQUIRED)
+# find_package(jr_assert REQUIRED)
 find_package(span-lite 0.6.0 REQUIRED)
 find_package(benchmark REQUIRED)
 
@@ -118,8 +118,11 @@ add_library(${PROJECT_NAME}
 # -Weffc++ gives a fair amount of dumb noise errors so disabled
     # PRIVATE "-Werror=shadow" "-Weffc++")
 
+add_subdirectory(trie/jr_assert)
 add_subdirectory(trie)
 add_subdirectory(compact_trie2)
+add_subdirectory(compact_trie)
+add_subdirectory(utility)
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE jr_assert::jr_assert
@@ -131,7 +134,7 @@ add_library(wordsearch_solver::wordsearch_solver ALIAS ${PROJECT_NAME})
 
 add_executable(${PROJECT_NAME}_bench bench/bench.cpp)
 target_link_libraries(${PROJECT_NAME}_bench
-    wordsearch_solver::wordsearch_solver trie::trie compact_trie2::compact_trie2 benchmark::benchmark)
+    wordsearch_solver::wordsearch_solver trie::trie compact_trie2::compact_trie2 compact_trie::compact_trie benchmark::benchmark)
 
 # message("in word_trie_lib PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR}")
 
@@ -148,6 +151,7 @@ target_link_libraries(${PROJECT_NAME}_main
   profiler::profiler
   wordsearch_solver::wordsearch_solver
   compact_trie2::compact_trie2
+  compact_trie::compact_trie
   BFG::Lyra
   jr_assert::jr_assert
   fmt::fmt

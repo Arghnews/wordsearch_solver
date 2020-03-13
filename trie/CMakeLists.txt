@@ -7,11 +7,12 @@ add_subdirectory(trie)
 get_directory_property(hasParent PARENT_DIRECTORY)
 if(NOT hasParent)
 
-    find_package(jr_assert REQUIRED)
+    add_subdirectory(jr_assert)
+
     find_package(fmt REQUIRED)
 
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-    # set(CMAKE_VERBOSE_MAKEFILE ON)
+    set(CMAKE_VERBOSE_MAKEFILE ON)
 
     set(CMAKE_CXX_STANDARD 17)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)

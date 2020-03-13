@@ -15,6 +15,7 @@
 #include "dictionary_std_vector.h"
 #include "trie.h"
 #include "compact_trie2.hpp"
+#include "compact_trie.hpp"
 
 using namespace std::literals;
 
@@ -96,7 +97,7 @@ TEST_CASE( "Check test inputs", "[input]")
 }
 
 TEMPLATE_TEST_CASE( "Test wordsearch/dict implementations", "[test]",
-    DictionaryStdSet, DictionaryStdVector, trie::Trie, trie::CompactTrie,
+    DictionaryStdSet, DictionaryStdVector, trie::Trie, compact_trie::CompactTrie,
     DictionaryStdUnorderedMap, CompactTrie2
     )
 // DictionaryStdVector)

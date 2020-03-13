@@ -1,10 +1,14 @@
-#ifndef MINI_OFFSETS_H
-#define MINI_OFFSETS_H
+#ifndef MINI_OFFSETS_HPP
+#define MINI_OFFSETS_HPP
 
+#include <range/v3/iterator/basic_iterator.hpp>
+#include <range/v3/range/access.hpp>
 #include <range/v3/view/facade.hpp>
+
 
 #include <cassert>
 #include <cstdint>
+#include <cstddef>
 #include <cstring>
 #include <utility>
 
@@ -100,4 +104,4 @@ MiniOffsets<Rng> make_mini_offsets(Rng && rng)
   return MiniOffsets<Rng>{std::forward<Rng>(rng)};
 }
 
-#endif // MINI_OFFSETS_H
+#endif // MINI_OFFSETS_HPP

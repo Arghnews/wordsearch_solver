@@ -1,6 +1,7 @@
 #ifndef COMPACT_TRIE2_ITERATOR_TYPEDEFS_HPP
 #define COMPACT_TRIE2_ITERATOR_TYPEDEFS_HPP
 
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 

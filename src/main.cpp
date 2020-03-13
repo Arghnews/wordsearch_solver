@@ -33,6 +33,7 @@ using namespace std::literals;
 #include "dictionary_std_unordered_map.h"
 #include "trie.h"
 #include "compact_trie2.hpp"
+#include "compact_trie.hpp"
 
 #include <gperftools/profiler.h>
 
@@ -330,7 +331,7 @@ int main(int argc, char** argv)
   }
   else if (args.backend == "compact_trie")
   {
-    return templated_main(std::move(args), trie::CompactTrie{vec});
+    return templated_main(std::move(args), compact_trie::CompactTrie{vec});
     // return Dictionary{trie::CompactTrie(vec)};
   }
   else if (args.backend == "stdunorderedmap")

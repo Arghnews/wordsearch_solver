@@ -1,65 +1,19 @@
 #ifndef COMPACT_TRIE2_HPP
 #define COMPACT_TRIE2_HPP
 
-#include "compact_trie2_iterator_typedefs.hpp"
 #include "empty_node_view.hpp"
-#include "flat_char_value_map.hpp"
 #include "full_node_view.hpp"
+#include "compact_trie2_iterator_typedefs.hpp"
+#include "utility/flat_char_value_map.hpp"
 
-#include <range/v3/action/push_back.hpp>
-#include <range/v3/action/sort.hpp>
-#include <range/v3/action/unique.hpp>
-#include <range/v3/algorithm/any_of.hpp>
-#include <range/v3/algorithm/for_each.hpp>
-#include <range/v3/algorithm/is_sorted.hpp>
-#include <range/v3/algorithm/max.hpp>
-#include <range/v3/functional/identity.hpp>
-#include <range/v3/iterator/access.hpp>
-#include <range/v3/iterator/concepts.hpp>
-#include <range/v3/iterator/operations.hpp>
-#include <range/v3/iterator/traits.hpp>
-#include <range/v3/range/access.hpp>
-#include <range/v3/range/concepts.hpp>
-#include <range/v3/range/conversion.hpp>
-#include <range/v3/range/primitives.hpp>
-#include <range/v3/view/adaptor.hpp>
-#include <range/v3/view/all.hpp>
-#include <range/v3/view/drop.hpp>
-#include <range/v3/view/drop_exactly.hpp>
-#include <range/v3/view/enumerate.hpp>
-#include <range/v3/view/facade.hpp>
-#include <range/v3/view/filter.hpp>
-#include <range/v3/view/group_by.hpp>
-#include <range/v3/view/iota.hpp>
-#include <range/v3/view/slice.hpp>
-// #include <range/v3/view/subrange.hpp>
-#include <range/v3/view/transform.hpp>
-#include <range/v3/view/unique.hpp>
-#include <range/v3/view/zip.hpp>
-
-#include <prettyprint.hpp>
-#include <fmt/core.h>
-#include <fmt/format.h>
-#include <fmt/ostream.h>
-
-#include <algorithm>
-#include <bitset>
-#include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <initializer_list>
-#include <iterator>
-#include <optional>
-#include <iostream>
 #include <ostream>
-#include <stdexcept>
-#include <limits>
 #include <string>
 #include <string_view>
-#include <tuple>
-#include <type_traits>
 #include <utility>
 #include <vector>
-#include <variant>
 
 class CompactTrie2
 {
@@ -121,7 +75,7 @@ class CompactTrie2
   std::vector<std::uint8_t> data_;
   std::vector<std::size_t> rows_;
   std::size_t size_;
-  mutable FlatCharValueMap<std::pair<DataIterator, RowIterator>> cache_;
+  mutable utility::FlatCharValueMap<std::pair<DataIterator, RowIterator>> cache_;
 };
 
 #include "compact_trie2.tpp"

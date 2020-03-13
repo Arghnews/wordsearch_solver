@@ -5,65 +5,39 @@
 #include "compact_trie2.hpp"
 
 #include "empty_node_view.hpp"
-#include "flat_char_value_map.hpp"
+#include "utility/flat_char_value_map.hpp"
 #include "full_node_view.hpp"
-
-// TODO: chop down these headers to only what's needed, does clang-tidy do this
-// automagically?
-#include <range/v3/action/push_back.hpp>
-#include <range/v3/action/sort.hpp>
-#include <range/v3/action/unique.hpp>
-#include <range/v3/algorithm/any_of.hpp>
-#include <range/v3/algorithm/for_each.hpp>
-#include <range/v3/algorithm/is_sorted.hpp>
-#include <range/v3/algorithm/max.hpp>
-#include <range/v3/functional/identity.hpp>
-#include <range/v3/iterator/access.hpp>
-#include <range/v3/iterator/concepts.hpp>
-#include <range/v3/iterator/operations.hpp>
-#include <range/v3/iterator/traits.hpp>
-#include <range/v3/range/access.hpp>
-#include <range/v3/range/concepts.hpp>
-#include <range/v3/range/conversion.hpp>
-#include <range/v3/range/primitives.hpp>
-#include <range/v3/view/adaptor.hpp>
-#include <range/v3/view/all.hpp>
-#include <range/v3/view/drop.hpp>
-#include <range/v3/view/drop_exactly.hpp>
-#include <range/v3/view/enumerate.hpp>
-#include <range/v3/view/facade.hpp>
-#include <range/v3/view/filter.hpp>
-#include <range/v3/view/group_by.hpp>
-#include <range/v3/view/iota.hpp>
-#include <range/v3/view/slice.hpp>
-// #include <range/v3/view/subrange.hpp>
-#include <range/v3/view/transform.hpp>
-#include <range/v3/view/unique.hpp>
-#include <range/v3/view/zip.hpp>
+#include "utility/utility.hpp"
 
 #include <prettyprint.hpp>
 #include <fmt/core.h>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
-#include <algorithm>
-#include <bitset>
-#include <cassert>
+#include <range/v3/action/push_back.hpp>
+#include <range/v3/action/sort.hpp>
+#include <range/v3/action/unique.hpp>
+#include <range/v3/algorithm/for_each.hpp>
+#include <range/v3/algorithm/is_sorted.hpp>
+#include <range/v3/view/all.hpp>
+#include <range/v3/view/drop.hpp>
+#include <range/v3/view/drop_exactly.hpp>
+#include <range/v3/view/enumerate.hpp>
+#include <range/v3/view/slice.hpp>
+#include <range/v3/view/transform.hpp>
+#include <range/v3/view/unique.hpp>
+#include <range/v3/view/zip.hpp>
+
 #include <cstdint>
-#include <initializer_list>
 #include <iterator>
-#include <optional>
-#include <iostream>
-#include <ostream>
-#include <stdexcept>
+#include <limits>
 #include <limits>
 #include <string>
 #include <string_view>
-#include <tuple>
 #include <type_traits>
 #include <utility>
-#include <vector>
 #include <variant>
+#include <vector>
 
 // TODO: move header stuff into a header and rest into a .tcc
 
@@ -76,99 +50,6 @@
 template<class Iterator>
 using NodeVariant = std::variant<EmptyNodeView_<Iterator>,
       FullNodeView_<Iterator> >;
-
-template<class Rng>
-auto words_grouped_by_prefix_suffix(Rng&& words_in)
-{
-  static_assert(ranges::forward_range<Rng>);
-  auto words = ranges::views::all(words_in);
-  assert(ranges::is_sorted(words));
-  const auto longest = (ranges::max(words |
-      ranges::views::transform([] (const auto& word)
-        {
-          // decltype(word)::N;
-          // return ranges::size(word);
-          // return std::size(word);
-        // fmt::print("On word: {}, ranges::size {}, word.size() {}\n",
-            // word, ranges::size(word), word.size());
-          return word.size();
-        })));
-  // fmt::print("longest: {}\n", longest);
-
-  return ranges::views::ints(1UL, longest + 2)
-    | ranges::views::transform(
-      // This previously captured by reference
-      // *Takes large breath*
-      // FUUUU*****
-      [words] (auto&& i)
-      {
-        // fmt::print("\nIteration, i: {}\n", i);
-
-        auto w = ranges::views::all(words)
-          | ranges::views::filter(
-              [i] (const auto& word)
-              {
-                return word.size() + 1 >= i;
-              })
-          | ranges::views::transform(
-              // Prefix, suffix (one char or empty string), bool represents if this
-              // marks the end of a word or not.
-              [i] (const auto& word) -> std::tuple<std::string_view, char, bool>
-              {
-                if (i == word.size() + 1)
-                {
-                  return {{word.data(), i - 1}, {}, true};
-                }
-                return {{word.data(), i - 1}, word.at(i - 1), false};
-              })
-          | ranges::views::unique
-          | ranges::views::group_by(
-              [] (const auto& tup0, const auto& tup1)
-              {
-                return std::get<0>(tup0) == std::get<0>(tup1);
-              })
-          ;
-
-        return w;
-      })
-    | ranges::views::transform(
-        ranges::views::transform(
-          [] (auto&& ww)
-          {
-            const auto prefix = std::get<0>(ww.front());
-            static_assert(!std::is_reference_v<decltype(prefix)>, "This returns by "
-                "value as transform constructs tuples. A reference will dangle.");
-
-            // Unsure how to accomplish this in rangev3 style without two passes?
-            // Lambda capture ref to bool end_of_word didn't work (assuming due to
-            // rangev3 reordering freedoms, force eager evaluation of suffixes?)
-            // Regardless leaving like this unless this is a performance problem
-            auto suffixes = ww
-            | ranges::views::remove_if(
-                [] (const auto& prefix_suffix_endofword)
-                {
-                  return std::get<2>(prefix_suffix_endofword);
-                })
-            | ranges::views::transform(
-                [] (const auto& prefix_suffix_endofword)
-                {
-                  return std::get<1>(prefix_suffix_endofword);
-                })
-            ;
-
-            const bool is_end_of_word = ranges::any_of(ww
-                | ranges::views::transform(
-                  [] (const auto& prefix_suffix_endofword)
-                  {
-                    return std::get<2>(prefix_suffix_endofword);
-                  }),
-                ranges::identity());
-
-            return std::tuple{prefix, suffixes, is_end_of_word};
-          })
-      )
-  ;
-}
 
 template<class Iterator>
 NodeVariant<Iterator> make_node_view_variant(Iterator it)
@@ -377,7 +258,7 @@ void CompactTrie2::init(T&& words_view)
 
   auto data_insert_iter = std::back_inserter(data_);
 
-  for (auto words_by_length: words_grouped_by_prefix_suffix(words_view))
+  for (auto words_by_length: utility::words_grouped_by_prefix_suffix(words_view))
   {
     // fmt::print("\nIteration\n");
     // fmt::print("data: {}\n", data);
@@ -385,11 +266,7 @@ void CompactTrie2::init(T&& words_view)
     for (auto [prefix, suffixes, is_end_of_word]: words_by_length)
     {
       size_ += is_end_of_word;
-      // TODO: see if this allocation of a vector is a significant
-      // performance penalty. If so, consider a llvm/boost etc small_vector
-      make_node(
-          ranges::views::all(suffixes) | ranges::to<std::vector>(),
-          data_insert_iter, is_end_of_word);
+      make_node(suffixes, data_insert_iter, is_end_of_word);
       // fmt::print("{} -> {}, end_of_word: {}\n", prefix,
          // suffixes | ranges::to<std::vector>(), is_end_of_word);
     }

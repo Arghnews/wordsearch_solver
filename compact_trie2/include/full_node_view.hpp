@@ -1,5 +1,5 @@
-#ifndef FULLNODEVIEW_H
-#define FULLNODEVIEW_H
+#ifndef FULLNODEVIEW_HPP
+#define FULLNODEVIEW_HPP
 
 #include "mini_offsets.hpp"
 #include "compact_trie2_iterator_typedefs.hpp"
@@ -11,6 +11,7 @@
 
 #include <bitset>
 #include <cstdint>
+#include <cstddef>
 #include <cstring>
 #include <ostream>
 #include <type_traits>
@@ -149,4 +150,4 @@ class FullNodeView_
 using FullNodeViewMut = FullNodeView_<DataIteratorMut>;
 using FullNodeView = FullNodeView_<DataIterator>;
 
-#endif // FULLNODEVIEW_H
+#endif // FULLNODEVIEW_HPP

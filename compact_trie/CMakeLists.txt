@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
-project(compact_trie2)
+project(compact_trie)
 
 find_package(fmt REQUIRED)
 find_package(range-v3 REQUIRED)
@@ -10,30 +10,27 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# get_cmake_property(_variableNames VARIABLES)
-# list (SORT _variableNames)
-# foreach (_variableName ${_variableNames})
-    # message(STATUS "${_variableName}=${${_variableName}}")
-# endforeach()
-
+set(INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
+set(SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 set(HEADERS
-    "compact_trie2.hpp"
-    "compact_trie2_iterator_typedefs.hpp"
-    "compact_trie2.tpp"
-    "empty_node_view.hpp"
-    "full_node_view.hpp"
-    "mini_offsets.hpp"
+    "compact_trie.hpp"
+    "compact_trie.tpp"
+    # "flat_char_value_map.hpp"
+    "node.hpp"
     )
 
-set(INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
+set(SOURCES
+    "node.cpp"
+    "compact_trie.cpp"
+    )
+
 list(TRANSFORM HEADERS PREPEND "${INCLUDE_DIR}/")
+list(TRANSFORM SOURCES PREPEND "${SRC_DIR}/")
 
 add_library(${PROJECT_NAME}
     ${HEADERS}
-    "src/compact_trie2.cpp"
-    "src/empty_node_view.cpp"
-    "src/full_node_view.cpp"
+    ${SOURCES}
     )
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
@@ -43,8 +40,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${INCLUDE_DIR})
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
     fmt::fmt
-    utility::utility
     range-v3::range-v3
+    utility::utility
     )
 
 get_directory_property(hasParent PARENT_DIRECTORY)

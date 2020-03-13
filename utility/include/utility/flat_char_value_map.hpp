@@ -1,6 +1,7 @@
-#ifndef FLAT_CHAR_VALUE_MAP_H
-#define FLAT_CHAR_VALUE_MAP_H
+#ifndef FLAT_CHAR_VALUE_MAP_HPP
+#define FLAT_CHAR_VALUE_MAP_HPP
 
+#include <algorithm>
 #include <cstddef>
 #include <iostream>
 #include <optional>
@@ -8,6 +9,9 @@
 #include <string_view>
 #include <utility>
 #include <vector>
+
+namespace utility
+{
 
 template<class Value>
 class FlatCharValueMap
@@ -33,7 +37,7 @@ class FlatCharValueMap
   {
     // std::cout << "FlatCharValueMap hits: " << hits << " vs misses: " << misses <<
       // " -- hits per miss: " <<
-      // static_cast<double>(hits) / static_cast<double>(misses) << "" << "\n";
+      // static_cast<double>(hits) / static_cast<double>(misses) << "" << std::endl;
   }
 
   using NumbElementsConsumed = std::size_t;
@@ -86,8 +90,10 @@ class FlatCharValueMap
   std::string keys_;
   std::vector<Value> values_;
 
-  mutable std::size_t hits = 0;
-  mutable std::size_t misses = 0;
+  /* mutable */ std::size_t hits = 0;
+  /* mutable */ std::size_t misses = 0;
 };
 
-#endif // FLAT_CHAR_VALUE_MAP_H
+}
+
+#endif // FLAT_CHAR_VALUE_MAP_HPP
