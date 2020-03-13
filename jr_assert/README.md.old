@@ -1,0 +1,75 @@
+#### `JR_ASSERT` - assert replacement that uses fmt library
+
+### Example
+
+
+
+
+
+
+
+
+TODO:
+think around solution to shutting up warning
+Esp. when NDEBUG or not, 2 cases for each!
+UNREACHABLE(args...) dur.
+Try error messages when JR_ASSERT() with NDEBUG on and off
+Structured binding \[&\](){} capture is a problem, can't capture refs
+-Wgnu-zero-variadic-macro-arguments is back with a vengeance. Differs gcc to clang these last 2 points
+Commas problem on g++ Release due to macro expansion putting sizeof in front
+Look into but ultimately think we'll have to give up and just make 2 fucking macros, it's fine
+
+
+
+
+```cpp
+#include <string>
+#include <fmt/format.h>
+#include <jr_assert/jr_assert.h>
+
+int main()
+{
+  std::string s{"A string"};
+  auto f = []() { return 42; };
+  JR_ASSERT(f() == 42);
+  JR_ASSERT(1 + 1 == 2, "Should not fire: {} {}", s, f());
+  JR_ASSERT(1 + 1 != 2, "Fires: {} {}", s, f());
+  // To std::cerr: "/path/to/main.cpp:11: Assert failed: `1 + 1 != 2` Fires: , 42"
+}
+```
+* `JR_ASSERT` statements disabled by defining `NDEBUG` or `JR_ASSERT_DISABLE`
+* `JR_UNREACHABLE()`
+* `JR_ASSERT_ALWAYS_ENABLED(condition, format_args...)` - same as normal `JR_ASSERT` but enabled even with `NDEBUG` or `JR_ASSERT_DISABLE` are defined
+
+### Requires:
+* c++11
+* [fmt](https://github.com/fmtlib/fmt) library
+* Compiler that supports `##__VA_ARGS__`
+  * TLDR: Non-ancient gcc or clang will work
+  * A brief test on [wandbox](https://wandbox.org/) with fairly ancient gcc 4 and clang 4 both work
+    * Both give out warnings:
+    * token pasting of ',' and __VA_ARGS__ is a GNU extension
+    * warning: ISO C++11 requires at least one argument for the "..." in a variadic macro
+    * However library is installed as "system" header so is exempt from such warnings
+    * Ie. library compiles with `-std=c++11 -pedantic` without warnings
+
+### Status:
+* Asserts that can use c++ fmt library syntax
+* When asserts are turned off/pass the function arguments are not evaluated ie.
+  `JR_ASSERT(true, "{}", func_that_takes_ages())` should be instant
+* (Currently) always logs to `std::cerr` and then calls `std::abort`
+* (Currently) May allocate memory in log handler
+* Works with non-movable non-copyable types
+
+### Thoughts on future goals:
+* Improve CMake deployment script, ie. add cmake version file etc.
+* More CMake improvements like asserting it requires c++11
+* Find (should be simple enough) neater way to build main.cpp for testing out
+  stuff as well as just the install
+* Careful about making this into a full phat logger, but add a way to add as
+  custom handler for asserts
+
+### Acknowledgements
+* [foonathan's debug_assert](https://github.com/foonathan/debug_assert) - design inspiration
+* [hedley](https://nemequ.github.io/hedley/) - nice cross-platform preprocessor wrappers
+

@@ -223,4 +223,3 @@ add_custom_command(TARGET ${PROJECT_NAME}_after_all_built POST_BUILD
 # add_subdirectory(test)
 # enable_testing()
 # catch_discover_tests(test)
-
