@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 project(trie)
 
-find_package(jr_assert REQUIRED)
 find_package(fmt REQUIRED)
 
 add_library(${PROJECT_NAME} INTERFACE)

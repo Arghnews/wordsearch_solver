@@ -1,0 +1,3 @@
+[submodule "jr_assert/include/jr_assert/hedley"]
+	path = jr_assert/include/jr_assert/hedley
+	url = https://github.com/nemequ/hedley.git
