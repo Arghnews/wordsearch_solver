@@ -1,5 +1,5 @@
-#ifndef MINI_OFFSETS_HPP
-#define MINI_OFFSETS_HPP
+#ifndef COMPACT_TRIE2_MINI_OFFSETS_HPP
+#define COMPACT_TRIE2_MINI_OFFSETS_HPP
 
 #include <range/v3/iterator/basic_iterator.hpp>
 #include <range/v3/range/access.hpp>
@@ -104,4 +104,4 @@ MiniOffsets<Rng> make_mini_offsets(Rng && rng)
   return MiniOffsets<Rng>{std::forward<Rng>(rng)};
 }
 
-#endif // MINI_OFFSETS_HPP
+#endif // COMPACT_TRIE2_MINI_OFFSETS_HPP

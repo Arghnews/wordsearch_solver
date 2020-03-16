@@ -79,7 +79,7 @@ bool CompactTrie::contains(const std::string_view word,
     const ranges::subrange<NodesIterator> nodes,
     const ranges::subrange<RowsIterator> rows) const
 {
-  const auto [node_it, rows_it] = detail::search(word, nodes, rows);
+  const auto [node_it, rows_it] = this->search(word, nodes, rows);
   if (node_it == nodes.end())
   {
     return false;
@@ -98,7 +98,7 @@ bool CompactTrie::further(const std::string_view word,
     const ranges::subrange<NodesIterator> nodes,
     const ranges::subrange<RowsIterator> rows) const
 {
-  const auto [node_it, rows_it] = detail::search(word, nodes, rows);
+  const auto [node_it, rows_it] = this->search(word, nodes, rows);
   if (node_it == nodes.end())
   {
     return false;
@@ -141,7 +141,7 @@ std::ostream& operator<<(std::ostream& os, const CompactTrie& ct)
   return os << fmt::to_string(buff);
 }
 
-namespace detail
+namespace
 {
 
 CompactTrie::NodesIterator follow(const CompactTrie::NodesIterator node_it,
@@ -165,9 +165,11 @@ CompactTrie::NodesIterator follow(const CompactTrie::NodesIterator node_it,
   return *rows_it + static_cast<long>(preceding);
 }
 
-CompactTrie::const_iterator search(const std::string_view word,
+}
+
+CompactTrie::const_iterator CompactTrie::search(std::string_view word,
     const ranges::subrange<CompactTrie::NodesIterator> nodes,
-    const ranges::subrange<CompactTrie::RowsIterator> rows)
+    const ranges::subrange<CompactTrie::RowsIterator> rows) const
 {
   if (nodes.empty())
   {
@@ -201,7 +203,7 @@ CompactTrie::const_iterator search(const std::string_view word,
       return {it, rows_it};
     }
     // fmt::print("Node now: {}, row: {}, row_index: {}\n", *next_it,
-        // rows_it - rows.begin(), it - nodes.begin() + *rows_it);
+    // rows_it - rows.begin(), it - nodes.begin() + *rows_it);
     it = next_it;
     ++rows_it;
     // if (use_cache)
@@ -212,8 +214,6 @@ CompactTrie::const_iterator search(const std::string_view word,
   assert(it != nodes.end());
   assert(rows_it != rows.end());
   return {it, rows_it};
-}
-
 }
 
 

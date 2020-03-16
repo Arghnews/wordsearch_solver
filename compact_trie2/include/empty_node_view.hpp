@@ -1,5 +1,5 @@
-#ifndef EMPTYNODEVIEW_HPP
-#define EMPTYNODEVIEW_HPP
+#ifndef EMPTY_NODE_VIEW_HPP
+#define EMPTY_NODE_VIEW_HPP
 
 #include "compact_trie2_iterator_typedefs.hpp"
 
@@ -60,4 +60,4 @@ class EmptyNodeView_
 using EmptyNodeViewMut = EmptyNodeView_<DataIteratorMut>;
 using EmptyNodeView = EmptyNodeView_<DataIterator>;
 
-#endif // EMPTYNODEVIEW_HPP
+#endif // EMPTY_NODE_VIEW_HPP

@@ -1,5 +1,5 @@
-#ifndef UTILITY_HPP
-#define UTILITY_HPP
+#ifndef UTILITY_UTILITY_HPP
+#define UTILITY_UTILITY_HPP
 
 #include <range/v3/algorithm/any_of.hpp>
 #include <range/v3/algorithm/is_sorted.hpp>
@@ -135,4 +135,4 @@ auto words_grouped_by_prefix_suffix(Rng&& words_in)
 
 }
 
-#endif // UTILITY_HPP
+#endif // UTILITY_UTILITY_HPP

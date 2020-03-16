@@ -2,10 +2,6 @@ cmake_minimum_required(VERSION 3.14)
 
 project(compact_trie_main)
 
-# TODO: remove this
-find_package(jr_assert REQUIRED)
-
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
@@ -55,7 +51,7 @@ set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-fsanitize=address,undefined")
 
 set(EXE_NAME ${PROJECT_NAME})
 add_executable(${EXE_NAME} main.cpp)
-target_link_libraries(${EXE_NAME} PRIVATE compact_trie::compact_trie jr_assert::jr_assert)
+target_link_libraries(${EXE_NAME} PRIVATE compact_trie::compact_trie)
 
 # message("copy ${CMAKE_BINARY_DIR}/compile_commands.json -> ${PROJECT_SOURCE_DIR}")
 add_custom_target(${PROJECT_NAME}_after_all_built ALL)

@@ -87,6 +87,12 @@ class CompactTrie
 
   std::size_t size() const;
 
+  private:
+  CompactTrie::const_iterator search(std::string_view word,
+      ranges::subrange<CompactTrie::NodesIterator> nodes,
+      ranges::subrange<CompactTrie::RowsIterator> rows) const;
+
+
   friend std::ostream& operator<<(std::ostream& os, const CompactTrie& ct);
 
   Nodes nodes_;
@@ -94,15 +100,6 @@ class CompactTrie
   std::size_t size_;
   mutable utility::FlatCharValueMap<const_iterator> cache_;
 };
-
-namespace detail
-{
-
-CompactTrie::const_iterator search(std::string_view word,
-    ranges::subrange<CompactTrie::NodesIterator> nodes,
-    ranges::subrange<CompactTrie::RowsIterator> rows);
-
-}
 
 }
 

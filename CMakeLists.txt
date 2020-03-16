@@ -61,7 +61,13 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fno-inline-functions ${COMPILER_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DNDEBUG -g -O2 -fno-omit-frame-pointer -march=native ${COMPILER_FLAGS}")
 # set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -fno-inline-functions -fno-omit-frame-pointer -march=native ${COMPILER_FLAGS}")
 # set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DNDEBUG -O3 -march=native ${COMPILER_FLAGS}")
-set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3 -g -march=native ${COMPILER_FLAGS}")
+set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3 -g -flto -march=native ${COMPILER_FLAGS}")
+
+# # Enable link time optimisation test
+# set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+# Interestingly from: https://stackoverflow.com/a/47370726/8594193
+# says "for gcc adds -flto -fno-fat-lto-objects"
+# My program is significantly faster with only -flto
 
 set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-fsanitize=address,undefined")
 # set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-fsanitize=address,undefined")
@@ -125,7 +131,7 @@ add_subdirectory(compact_trie)
 add_subdirectory(utility)
 
 target_link_libraries(${PROJECT_NAME}
-    PRIVATE jr_assert::jr_assert
+    PUBLIC jr_assert::jr_assert
     PUBLIC profiler::profiler -lstdc++fs nonstd::span-lite trie::trie fmt::fmt
   )
 #target_link_options(${PROJECT_NAME} BEFORE

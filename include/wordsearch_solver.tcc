@@ -28,9 +28,9 @@
 #include <boost/dynamic_bitset/dynamic_bitset.hpp>
 
 // For now for debug
-#include "trie.h"
+#include "trie.hpp"
 #include "wordsearch_solver_defs.h"
-#include <jr_assert/jr_assert.h>
+#include "jr_assert/jr_assert.h"
 #include "stringindexes.h"
 
 template<>

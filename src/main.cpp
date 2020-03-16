@@ -7,6 +7,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <numeric>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -31,7 +32,7 @@ using namespace std::literals;
 #include "dictionary_std_set.h"
 #include "dictionary_std_vector.h"
 #include "dictionary_std_unordered_map.h"
-#include "trie.h"
+#include "trie.hpp"
 #include "compact_trie2.hpp"
 #include "compact_trie.hpp"
 

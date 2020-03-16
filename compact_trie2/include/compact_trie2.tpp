@@ -103,12 +103,11 @@ void make_node(ForwardCharsRange&& rng, OutputIterator out, bool is_end_of_word)
   static_assert(ranges::sized_range<ForwardCharsRange>,
       "The range passed to make node must be sized.");
   // static_assert(ranges::output_iterator<OutputIterator, std::uint8_t>);
-  using SizeType = std::uint8_t;
   if (rng.size() == 0)
   {
     assert(is_end_of_word && "0 characters must mean it's a word end");
   }
-  assert(rng.size() < std::numeric_limits<SizeType>::max());
+  assert(rng.size() < std::numeric_limits<std::uint8_t>::max());
   const auto size = static_cast<std::uint8_t>(rng.size());
 
   *out++ = size;

@@ -324,11 +324,10 @@ CompactTrie2::search(const std::string_view word, DataIterator it,
   std::size_t i = 0;
   if (use_cache)
   {
-    auto cached_result = cache_.lookup(word);
+    const auto* cached_result = cache_.lookup(word, i);
     if (cached_result)
     {
-      i = cached_result->first;
-      std::tie(it, rows_it) = cached_result->second;
+      std::tie(it, rows_it) = *cached_result;
     }
   }
 

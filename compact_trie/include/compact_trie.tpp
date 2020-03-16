@@ -80,7 +80,7 @@ void CompactTrie::contains_and_further(const std::string& stem,
     OutputIndexIterator further_out_it,
     OutputIndexIterator contains_and_further_out_it) const
 {
-  const auto [stem_node_it, stem_rows_it] = detail::search(stem,
+  const auto [stem_node_it, stem_rows_it] = this->search(stem,
       ranges::subrange(nodes_), ranges::subrange(rows_));
   if (stem_node_it == nodes_.end())
   {

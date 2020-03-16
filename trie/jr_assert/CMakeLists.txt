@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
-if (TARGET utility)
+if (TARGET jr_assert)
     return()
 endif()
 

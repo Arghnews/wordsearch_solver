@@ -1,5 +1,5 @@
-#ifndef COMPACT_TRIE2_HPP
-#define COMPACT_TRIE2_HPP
+#ifndef COMPACT_TRIE2_COMPACT_TRIE2_HPP
+#define COMPACT_TRIE2_COMPACT_TRIE2_HPP
 
 #include "empty_node_view.hpp"
 #include "full_node_view.hpp"
@@ -80,4 +80,4 @@ class CompactTrie2
 
 #include "compact_trie2.tpp"
 
-#endif // COMPACT_TRIE2_H
+#endif // COMPACT_TRIE2_COMPACT_TRIE2_HPP
