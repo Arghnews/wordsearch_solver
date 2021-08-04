@@ -1,10 +1,10 @@
-#include "trie.hpp"
-#include "node.hpp"
+#include "wordsearch_solver/trie/trie.hpp"
+#include "wordsearch_solver/trie/node.hpp"
 
-#include <prettyprint.hpp>
 #include <fmt/core.h>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
+#include <fmt/ranges.h>
 
 #include <range/v3/view/all.hpp>
 #include <range/v3/view/drop.hpp>
@@ -69,6 +69,11 @@ std::size_t Trie::size() const
   return size_;
 }
 
+bool Trie::empty() const
+{
+  return size_ == 0;
+}
+
 std::ostream& operator<<(std::ostream& os, const Trie& ct)
 {
   fmt::memory_buffer buff{};
@@ -91,12 +96,42 @@ std::ostream& operator<<(std::ostream& os, const Trie& ct)
   return os << fmt::to_string(buff);
 }
 
-namespace detail
+const Node* Trie::search(std::string_view word) const
 {
+  const Node* p = &root_;
 
-std::pair<Node*, bool> insert(Node& node, std::string_view word)
+  const bool use_cache = true;
+  std::size_t i = 0;
+  if (use_cache)
+  {
+    const auto* cached_result = cache_.lookup(word, i);
+    if (cached_result)
+    {
+      word.remove_prefix(i);
+      p = *cached_result;
+    }
+  }
+
+  for (; !word.empty(); word.remove_prefix(1))
+  {
+    // fmt::print("p: {}\n", *p);
+    const Node* next = p->test(word.front());
+    if (!next)
+    {
+      // fmt::print("next is nullptr, ret\n");
+      return nullptr;
+    }
+    // fmt::print("next: {}\n", *next);
+    p = next;
+    if (use_cache) cache_.append(word.front(), p);
+  }
+  return p;
+}
+
+std::pair<Node*, bool> Trie::insert(std::string_view word)
 {
-  Node* p = &node;
+  Node* p = &root_;
+
   for (; !word.empty(); word.remove_prefix(1))
   {
     p = p->add_char(word.front());
@@ -109,23 +144,8 @@ std::pair<Node*, bool> insert(Node& node, std::string_view word)
   return {p, false};
 }
 
-const Node* search(const Node& node, std::string_view word)
+namespace detail
 {
-  const Node* p = &node;
-  for (; !word.empty(); word.remove_prefix(1))
-  {
-    // fmt::print("p: {}\n", *p);
-    const Node* next = p->test(word.front());
-    if (!next)
-    {
-      // fmt::print("next is nullptr, ret\n");
-      return nullptr;
-    }
-    // fmt::print("next: {}\n", *next);
-    p = next;
-  }
-  return p;
-}
 
 bool contains(const Node& node, const std::string_view word)
 {

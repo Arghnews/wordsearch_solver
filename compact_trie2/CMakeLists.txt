@@ -1,21 +1,16 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.18)
 
 project(compact_trie2)
 
-find_package(fmt REQUIRED)
+set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH})
+set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR} ${CMAKE_PREFIX_PATH})
+
 find_package(range-v3 REQUIRED)
+find_package(fmt REQUIRED)
 
-# Project wide cpp standard
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-# get_cmake_property(_variableNames VARIABLES)
-# list (SORT _variableNames)
-# foreach (_variableName ${_variableNames})
-    # message(STATUS "${_variableName}=${${_variableName}}")
-# endforeach()
-
+set(INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
+set(INSTALL_INCLUDE_DIR "include")
+set(SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 set(HEADERS
     "compact_trie2.hpp"
@@ -26,30 +21,49 @@ set(HEADERS
     "mini_offsets.hpp"
     )
 
-set(INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
-list(TRANSFORM HEADERS PREPEND "${INCLUDE_DIR}/")
+set(SOURCES "compact_trie2.cpp" "empty_node_view.cpp" "full_node_view.cpp")
 
-add_library(${PROJECT_NAME}
-    ${HEADERS}
-    "src/compact_trie2.cpp"
-    "src/empty_node_view.cpp"
-    "src/full_node_view.cpp"
-    )
+list(TRANSFORM HEADERS PREPEND "${INCLUDE_DIR}/wordsearch_solver/${PROJECT_NAME}/")
+list(TRANSFORM SOURCES PREPEND "${SRC_DIR}/")
+
+add_library(${PROJECT_NAME} ${HEADERS} ${SOURCES})
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
-add_subdirectory(../utility ${CMAKE_CURRENT_BINARY_DIR}/utility)
-
-target_include_directories(${PROJECT_NAME} PUBLIC ${INCLUDE_DIR})
-target_link_libraries(${PROJECT_NAME}
-    PUBLIC
-    fmt::fmt
-    utility::utility
-    range-v3::range-v3
+target_include_directories(${PROJECT_NAME} PUBLIC
+    $<BUILD_INTERFACE:${INCLUDE_DIR}>
+    $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}>
     )
 
-get_directory_property(hasParent PARENT_DIRECTORY)
-# If this is being built as top level project
-if(NOT hasParent)
-    include(main.CMakeLists.txt)
-endif()
+target_link_libraries(${PROJECT_NAME} PUBLIC
+    fmt::fmt
+    range-v3::range-v3
+    utility::utility
+    )
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF)
+
+set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${HEADERS}")
+
+install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}-targets PUBLIC_HEADER
+    DESTINATION "${INSTALL_INCLUDE_DIR}/wordsearch_solver/${PROJECT_NAME}")
+
+include(GNUInstallDirs)
+
+install(EXPORT ${PROJECT_NAME}-targets
+        FILE ${PROJECT_NAME}-targets.cmake
+        NAMESPACE ${PROJECT_NAME}::
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/wordsearch_solver/${PROJECT_NAME}"
+         )
+
+
+# make_compile_commands(
+    # TARGET_TO_REBUILD_ON ${PROJECT_NAME}
+    # DESTINATION "${PROJECT_SOURCE_DIR}")
+
+# # EXCLUDE_FROM_ALL
+# add_executable(${PROJECT_NAME}_main main.cpp)
+# target_link_libraries(${PROJECT_NAME}_main ${PROJECT_NAME}::${PROJECT_NAME})
 

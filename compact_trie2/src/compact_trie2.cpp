@@ -1,8 +1,8 @@
-#include "compact_trie2.hpp"
+#include "wordsearch_solver/compact_trie2/compact_trie2.hpp"
 
-#include "compact_trie2_iterator_typedefs.hpp"
-#include "empty_node_view.hpp"
-#include "full_node_view.hpp"
+#include "wordsearch_solver/compact_trie2/compact_trie2_iterator_typedefs.hpp"
+#include "wordsearch_solver/compact_trie2/empty_node_view.hpp"
+#include "wordsearch_solver/compact_trie2/full_node_view.hpp"
 
 #include <range/v3/view/all.hpp>
 #include <range/v3/view/enumerate.hpp>
@@ -20,10 +20,13 @@
 #include <string_view>
 #include <tuple>
 
-#include <prettyprint.hpp>
 #include <fmt/core.h>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
+#include <fmt/ranges.h>
+
+namespace compact_trie2
+{
 
 CompactTrie2::CompactTrie2(const std::initializer_list<std::string_view>& words)
   : CompactTrie2(ranges::views::all(words))
@@ -387,5 +390,7 @@ std::ostream& operator<<(std::ostream& os, const CompactTrie2& ct)
   }
   return os << fmt::to_string(buff);
   // return os;
+}
+
 }
 

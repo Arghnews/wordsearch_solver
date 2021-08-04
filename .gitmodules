@@ -1,6 +1,0 @@
-[submodule "Lyra"]
-	path = Lyra
-	url = git@github.com:bfgroup/Lyra.git
-[submodule "trie/jr_assert/include/jr_assert/hedley"]
-	path = trie/jr_assert/include/jr_assert/hedley
-	url = https://github.com/nemequ/hedley.git

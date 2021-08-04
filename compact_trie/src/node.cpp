@@ -1,4 +1,4 @@
-#include "node.hpp"
+#include "wordsearch_solver/compact_trie/node.hpp"
 
 #include <fmt/core.h>
 #include <fmt/format.h>
@@ -21,7 +21,7 @@ std::ostream& operator<<(std::ostream& os, const Node& node)
   fmt::format_to(buff, "{{");
   for (auto i = 0ULL; i < size; ++i)
   {
-    if (letter_bits.test(i))
+    if (letter_bits.test(static_cast<std::size_t>(i)))
     {
       fmt::format_to(buff, "{}", static_cast<char>(i + 97));
     }

@@ -1,231 +1,426 @@
-cmake_minimum_required(VERSION 3.14)
-
-# This is for me rather than good practice as I like clang's error messages
-# Could check if env variable CXX is set then use that if so?
-# Must be before project line else cmake inifinite loops
-# set(CMAKE_CXX_COMPILER "/usr/local/bin/clang++")
+cmake_minimum_required(VERSION 3.18)
 
 project(wordsearch_solver)
+# set(CMAKE_EXECUTABLE_SUFFIX ".html")
+
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
+list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR})
+
+# set(INSTALL_INCLUDE_DIR "include")
+
+# if(CONAN_EXPORTED) # in conan local cache
+# include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+# conan_basic_setup()
+# else() # in user space
+    # if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
+    # file(DOWNLOAD "https://github.com/conan-io/cmake-conan/raw/v0.15/conan.cmake" "${CMAKE_BINARY_DIR}/conan.cmake")
+    # endif()
+    # include(${CMAKE_BINARY_DIR}/conan.cmake)
+    # conan_cmake_run(CONANFILE conanfile.py BASIC_SETUP CMAKE_TARGETS BUILD missing)
+# endif()
+
+
+# if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
+   # message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
+   # file(DOWNLOAD "https://github.com/conan-io/cmake-conan/raw/v0.15/conan.cmake"
+                 # "${CMAKE_BINARY_DIR}/conan.cmake")
+# endif()
+# include(${CMAKE_BINARY_DIR}/conan.cmake)
+
+
+# if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
+   # message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
+   # file(DOWNLOAD "https://github.com/conan-io/cmake-conan/raw/v0.15/conan.cmake"
+                 # "${CMAKE_BINARY_DIR}/conan.cmake")
+# endif()
+# include(${CMAKE_BINARY_DIR}/conan.cmake)
+
+# conan_cmake_run(REQUIRES
+    # solver_utility/0.1
+    # # fmt/[>=6.0] range-v3/[>=0.10.0] solver_utility/0.1
+    # # boost_container/[>=1.69.0]@bincrafters/stable
+    # # google-profiler/0.1
+                # BASIC_SETUP CMAKE_TARGETS
+                # BUILD missing)
+
+# SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-as-needed")
+
+
+# TODO: remove this
+# set(BUILD_SHARED_LIBS TRUE)
+# set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+
+
+# include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+# conan_basic_setup()
+# set(RULE_MESSAGES OFF)
+# set(CMAKE_INSTALL_MESSAGE NEVER)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_VERBOSE_MAKEFILE ON)
+# set(CMAKE_VERBOSE_MAKEFILE ON)
 
+# Project wide cpp standard
 set(CMAKE_CXX_STANDARD 17)
-# Prevent madness
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-# Prevent gnu standards extension stuffs
 set(CMAKE_CXX_EXTENSIONS OFF)
-# Per target
-# target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
-# set_target_properties(${PROJECT_NAME} PROPERTIES CXX_EXTENSIONS OFF)
-
-# find_package(fmt CONFIG REQUIRED)
-find_package(fmt REQUIRED)
-# find_package(spdlog REQUIRED)
-find_package(Catch2 REQUIRED)
-find_package(Boost 1.70.0 REQUIRED QUIET) # COMPONENTS container)
-# find_package(jr_assert REQUIRED)
-find_package(span-lite 0.6.0 REQUIRED)
-find_package(benchmark REQUIRED)
 
 # https://blog.kitware.com/cmake-and-the-default-build-type/
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(default_build_type "DEBUG")
-    message(STATUS "Setting build type to '${default_build_type}' as none was specified")
+    message(STATUS "Setting build type to '${default_build_type}' as none specified")
     # I prefer having it remind you you've forgotten to set the build type every time
     set(CMAKE_BUILD_TYPE "${default_build_type}")# CACHE
-        # STRING "Choose the type of build." FORCE)
-    # Set the possible values of build type for cmake-gui
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
         "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
 
-# Cannot just use set, will end up with CMake list data types
-# set(CMAKE_CXX_FLAGS_INIT "-Wall")
-# set(CMAKE_CXX_FLAGS_INIT "-Wall -Wextra -pedantic -Wfloat-equal \
-# -Wwrite-strings -Wswitch-enum -Wunreachable-code -Wconversion \
-# -Wcast-qual -Wstrict-overflow=5 -Werror=shadow -Werror=uninitialized \
-# -Werror=return-type -march=native -pipe\
-# ")
-# message("CMAKE_CXX_FLAGS_INIT ${CMAKE_CXX_FLAGS_INIT}")
-# set(COMPILER_FLAGS "hi")
-# Changed to warn not error on shadow for now
-string(CONCAT COMPILER_FLAGS "-Wall -Wextra -pedantic -Wfloat-equal "
-    "-Wwrite-strings -Wswitch-enum -Wunreachable-code -Wconversion "
-    "-Wcast-qual -Wstrict-overflow=5 -Werror=uninitialized "
-    "-Werror=return-type -pipe -fdiagnostics-color")
-#  -fno-inline-functions
+# if(CONAN_EXPORTED) # in conan local cache
+    # if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
+        # file(DOWNLOAD "https://github.com/conan-io/cmake-conan/raw/v0.15/conan.cmake" "${CMAKE_BINARY_DIR}/conan.cmake")
+    # endif()
+    # include(${CMAKE_BINARY_DIR}/conan.cmake)
+    # conan_cmake_run(REQUIRES fmt/[>=6.0] range-v3/[>=0.10.0] solver_utility/0.1
+                    # BASIC_SETUP CMAKE_TARGETS
+                    # BUILD missing)
+# endif()
 
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fno-inline-functions ${COMPILER_FLAGS}")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DNDEBUG -g -O2 -fno-omit-frame-pointer -march=native ${COMPILER_FLAGS}")
-# set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -fno-inline-functions -fno-omit-frame-pointer -march=native ${COMPILER_FLAGS}")
-# set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DNDEBUG -O3 -march=native ${COMPILER_FLAGS}")
-set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3 -g -flto -march=native ${COMPILER_FLAGS}")
 
-# # Enable link time optimisation test
-# set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
-# Interestingly from: https://stackoverflow.com/a/47370726/8594193
-# says "for gcc adds -flto -fno-fat-lto-objects"
-# My program is significantly faster with only -flto
+# Google profiler, assuming can use this in "add_subdirectory" projects
+# add_library(profiler INTERFACE IMPORTED GLOBAL)
+# target_link_options(profiler BEFORE INTERFACE "LINKER:--no-as-needed,/usr/local/lib/libprofiler.a" "LINKER:-lunwind")
+# # Don't believe necessary, more for consistency
+# add_library(profiler::profiler ALIAS profiler)
 
-set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-fsanitize=address,undefined")
-# set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-fsanitize=address,undefined")
-# set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-fsanitize=memory -fsanitize-memory-track-origins")
-# set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-fsanitize=address,undefined -fsanitize=memory -fsanitize-memory-track-origins")
-# set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-fsanitize=address,undefined -fuse-ld=lld")
-#set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-fuse-ld=lld")
 
-#set(CMAKE_EXE_LINKER_FLAGS
-#  "-fuse-ld=lld -fsanitize=address,undefined ${CMAKE_EXE_LINKER_FLAGS}"
-#  )
+string(JOIN " " COMPILER_FLAGS "-Wall -Wextra -pedantic -Wfloat-equal"
+"-Wwrite-strings -Wswitch-enum -Wunreachable-code -Wconversion"
+"-Wcast-qual -Wstrict-overflow=5 -Werror=uninitialized"
+"-Werror=return-type -pipe -fdiagnostics-color")
 
-#target_compile_options(${PROJECT_NAME}_main
-#    PRIVATE "-Werror=shadow")
-add_library(profiler INTERFACE IMPORTED GLOBAL)
-# target_link_options(profiler BEFORE INTERFACE "-Wl,--no-as-needed" "/usr/local/lib/libprofiler.so")
-target_link_options(profiler BEFORE INTERFACE "LINKER:--no-as-needed,/usr/local/lib/libprofiler.so")
-# Don't believe necessary, more for consistency
-add_library(profiler::profiler ALIAS profiler)
+# string(APPEND CMAKE_CXX_FLAGS " ${COMPILER_FLAGS} ")
+string(APPEND CMAKE_CXX_FLAGS " ${COMPILER_FLAGS} ")
 
-#add_library(profiler SHARED IMPORTED GLOBAL)
-#set_target_properties(profiler PROPERTIES IMPORTED_LOCATION /usr/local/lib/libprofiler.so)
-## Not necesaary but nice for consistency
-#add_library(profiler::profiler ALIAS profiler)
+# Don't want to build with sanitizers when installing with cmake or packaging,
+# otherwise downstream users MUST also enable sanitizers
 
-# add_library(${PROJECT_NAME} src/wordsearch_solver.cpp include/wordsearch_solver.h)
-add_library(${PROJECT_NAME}
-  # src/dictionary.cpp
-  src/stringindexes.cpp
-  src/dictionary_std_set.cpp
-  src/dictionary_std_vector.cpp
-  src/dictionary_std_unordered_map.cpp
+set(DEVELOPER_FLAGS FALSE CACHE BOOL "Enable warning/sanitizer flags during development of library")
+if (DEVELOPER_FLAGS)
+    set(SANITISERS " -fsanitize=address,undefined ")
+endif()
 
-  # include/dictionary.h
-  include/stringindexes.h
-  include/wordsearch_solver.h
-  include/wordsearch_solver.tcc
-  include/wordsearch_solver_defs.h
-  include/dictionary_std_set.h
-  include/dictionary_std_vector.h
-  include/dictionary_std_unordered_map.h
-  )
+string(APPEND CMAKE_CXX_FLAGS_DEBUG " -g -O0 -fno-omit-frame-pointer ${SANITISERS} ")
+string(REPLACE "-DNDEBUG" "" CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+string(APPEND CMAKE_CXX_FLAGS_RELWITHDEBINFO " -g -O2 -march=native -flto -fno-omit-frame-pointer ${SANITISERS} ")
+string(APPEND CMAKE_CXX_FLAGS_RELEASE " -g -O3 -march=native -flto -DNDEBUG ")
 
-# Using this to set files for IDE
-# If just add headers using add_library qtcreator complains about ambiguous
-# parse something. Although now it isn't?
-#set_target_properties(${PROJECT_NAME}
-#  PROPERTIES
-#  PUBLIC_HEADER "include/wordsearch_solver.h include/stringindexes.h"
-#  )
-# Needs to be here so that projects using this lib get these flags in their link flags
-# target_compile_options(${PROJECT_NAME}
-    # PRIVATE "-Werror=shadow" "-Wno-gnu-zero-variadic-macro-arguments")
-# -Weffc++ gives a fair amount of dumb noise errors so disabled
-    # PRIVATE "-Werror=shadow" "-Weffc++")
+# string(APPEND CMAKE_EXE_LINKER_FLAGS_DEBUG " -flto -fno-omit-frame-pointer ${SANITISERS} -fuse-ld=lld ")
+# string(APPEND CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO " -flto -fno-omit-frame-pointer ${SANITISERS} -fuse-ld=lld ")
+# string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " -flto -fuse-ld=lld ")
+string(APPEND CMAKE_EXE_LINKER_FLAGS_DEBUG " -flto -fno-omit-frame-pointer ")
+string(APPEND CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO " -flto -fno-omit-frame-pointer ${SANITISERS} ")
+string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " -flto ")
 
-add_subdirectory(trie/jr_assert)
-add_subdirectory(trie)
-add_subdirectory(compact_trie2)
-add_subdirectory(compact_trie)
+
+# # https://stackoverflow.com/a/10055571/8594193
+# if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # # using Clang
+    # string(APPEND CMAKE_CXX_FLAGS_RELEASE " -flto")
+    # string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " -flto -fuse-ld=lld")
+# elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    # # using GCC
+    # # Currently clangd 10 (but not 9) complains about "-fconcepts" so not using it.
+    # # https://github.com/clangd/clangd/issues/331
+    # # string(APPEND COMPILER_FLAGS " -fconcepts")
+    # string(APPEND CMAKE_CXX_FLAGS_RELEASE " -flto")
+    # string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " -flto -fuse-ld=lld")
+# endif()
+
+# set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 ${COMPILER_FLAGS}")
+# set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -fno-omit-frame-pointer -march=native ${COMPILER_FLAGS}")
+# set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -g -O3 -march=native ${COMPILER_FLAGS}")
+
+# set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${SANITISERS}")
+# set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${SANITISERS}")
+
+
+# Usage:
+# make_compile_commands(
+    # TARGET_TO_REBUILD_ON "${PROJECT_NAME}"
+    # DESTINATION "${PROJECT_SOURCE_DIR}")
+function(make_compile_commands)
+    set(oneValueArgs DESTINATION TARGET_TO_REBUILD_ON)
+    cmake_parse_arguments(MAKE_COMPILE_COMMANDS "" "${oneValueArgs}" "" ${ARGN})
+    set(DEP "${MAKE_COMPILE_COMMANDS_TARGET_TO_REBUILD_ON}_compile_commands_json")
+    add_custom_target("${DEP}" ALL VERBATIM)
+    add_custom_command(TARGET "${DEP}" POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E
+        copy "${CMAKE_BINARY_DIR}/compile_commands.json"
+            "${MAKE_COMPILE_COMMANDS_DESTINATION}"
+        VERBATIM
+        )
+    add_dependencies("${MAKE_COMPILE_COMMANDS_TARGET_TO_REBUILD_ON}" "${DEP}")
+endfunction()
+
+add_custom_target(${PROJECT_NAME}_after_all_built ALL VERBATIM)
+add_custom_command(TARGET ${PROJECT_NAME}_after_all_built POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E
+    copy "${CMAKE_BINARY_DIR}/compile_commands.json" "${CMAKE_SOURCE_DIR}"
+    VERBATIM
+    )
+
+list(APPEND ALL_SOLVERS trie compact_trie compact_trie2 dictionary_std_vector dictionary_std_set)
+list(APPEND ALL_SOLVERS_CLASSNAMES Trie CompactTrie CompactTrie2 DictionaryStdVector DictionaryStdSet)
+set(WORDSEARCH_SOLVERS "${ALL_SOLVERS}" CACHE STRING "Semicolon separated string of which solvers to build, from ${ALL_SOLVERS}")
+
+list(APPEND ALL_DICTIONARIES_CMAKE_LINK_LIBRARIES)
+list(APPEND ALL_DICTIONARY_CLASSES)
+list(APPEND ALL_SOLVER_INCLUDES)
+
+macro(add_component snake_case_name _pascal_case_name)
+    list(APPEND ALL_DICTIONARIES_CMAKE_LINK_LIBRARIES "${snake_case_name}::${snake_case_name}")
+    message("Adding ${_pascal_case_name}")
+    list(APPEND ALL_DICTIONARY_CLASSES "${snake_case_name}::${_pascal_case_name}")
+    add_subdirectory(${snake_case_name})
+    list(APPEND ALL_SOLVER_INCLUDES
+        "#include \"${PROJECT_NAME}/${snake_case_name}/${snake_case_name}.hpp\"")
+endmacro()
+
 add_subdirectory(utility)
 
-target_link_libraries(${PROJECT_NAME}
-    PUBLIC jr_assert::jr_assert
-    PUBLIC profiler::profiler -lstdc++fs nonstd::span-lite trie::trie fmt::fmt
-  )
-#target_link_options(${PROJECT_NAME} BEFORE
-#  PRIVATE "-fsanitize=address,undefined")
-add_library(wordsearch_solver::wordsearch_solver ALIAS ${PROJECT_NAME})
+if ("" STREQUAL "${WORDSEARCH_SOLVERS}")
+    message(FATAL_ERROR "Solvers specified in WORDSEARCH_SOLVERS may not be empty, must be semicolon separated list of items from ${ALL_SOLVERS}")
+endif()
 
-add_executable(${PROJECT_NAME}_bench bench/bench.cpp)
-target_link_libraries(${PROJECT_NAME}_bench
-    wordsearch_solver::wordsearch_solver trie::trie compact_trie2::compact_trie2 compact_trie::compact_trie benchmark::benchmark)
+list(APPEND SOLVER_C_DEFINES)
+string(TOUPPER "${PROJECT_NAME}" PROJECT_NAME_UPPERCASE)
+foreach(SOLVER IN LISTS WORDSEARCH_SOLVERS)
+    if (NOT (SOLVER IN_LIST ALL_SOLVERS))
+        message(FATAL_ERROR "Unrecognised solver \"${SOLVER}\", should be one of ${ALL_SOLVERS}")
+    else()
+        message("Found solver ${SOLVER}")
+        list(FIND ALL_SOLVERS "${SOLVER}" index)
+        message("Adding index ${index}")
+        list(GET ALL_SOLVERS_CLASSNAMES ${index} pascal_case_name)
+        message("Adding got solver classname ${pascal_case_name}")
+        add_component("${SOLVER}" "${pascal_case_name}")
+        list(APPEND SOLVER_C_DEFINES "#define ${PROJECT_NAME_UPPERCASE}_HAS_${SOLVER}")
+    endif()
+endforeach()
+list(JOIN ALL_DICTIONARY_CLASSES ", " ALL_DICTIONARY_CLASSES)
+list(JOIN ALL_SOLVER_INCLUDES "\n" ALL_SOLVER_INCLUDES)
+list(JOIN SOLVER_C_DEFINES "\n" SOLVER_C_DEFINES)
 
-# message("in word_trie_lib PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR}")
+string(JOIN "\n" config_file_content
+    "#ifndef WORDSEARCH_CONFIG_HPP_IN"
+    "#define WORDSEARCH_CONFIG_HPP_IN"
+    "#define WORDSEARCH_DICTIONARY_CLASSES ${ALL_DICTIONARY_CLASSES}"
+    "#include \"${PROJECT_NAME}/utility/utility.hpp\""
+    "${ALL_SOLVER_INCLUDES}"
+    "${SOLVER_C_DEFINES}"
+    "#include \"${PROJECT_NAME}/solver/solver.hpp\""
+    "#endif // WORDSEARCH_CONFIG_HPP_IN"
+    )
 
-target_include_directories(${PROJECT_NAME}
-  PUBLIC ${PROJECT_SOURCE_DIR}/include)
-#    PRIVATE ${PROJECT_SOURCE_DIR}/src) # Internal headers?
+set(PROJECT_GENERATED_HEADER_BUILD_PATH "${CMAKE_CURRENT_BINARY_DIR}/include/${PROJECT_NAME}/${PROJECT_NAME}.hpp")
+file(CONFIGURE
+    OUTPUT "${PROJECT_GENERATED_HEADER_BUILD_PATH}"
+    CONTENT "${config_file_content}")
 
-# Argument parser
-add_subdirectory(Lyra)
+configure_file(test/test_cases/massive_wordsearch.txt "${CMAKE_CURRENT_BINARY_DIR}" COPYONLY)
 
-add_executable(${PROJECT_NAME}_main src/main.cpp)
+add_subdirectory(solver)
 
-target_link_libraries(${PROJECT_NAME}_main
-  profiler::profiler
-  wordsearch_solver::wordsearch_solver
-  compact_trie2::compact_trie2
-  compact_trie::compact_trie
-  BFG::Lyra
-  jr_assert::jr_assert
-  fmt::fmt
-  )
+add_subdirectory(benchmark)
 
-#if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-#  target_link_options(${PROJECT_NAME}_main BEFORE
-#    PRIVATE "-fsanitize=address,undefined")
-#endif()
+add_subdirectory(cmdline_app)
 
+# add_subdirectory(compact_trie)
+# add_subdirectory(compact_trie2)
+# add_subdirectory(trie)
+# add_subdirectory(dictionary_std_vector)
+# add_subdirectory(dictionary_std_set)
+
+# add_subdirectory(desktop_solver_gui)
+
+# To add a new data structure for the solver, add it to:
+# ALL_DICTIONARIES_CMAKE_LINK_LIBRARIES
+# ALL_DICTIONARY_CLASSES
+# and add the includes in test/test_cases.cpp and test/test_cases2.cpp
+# Potential TODO: generate config header file here
+# LIST(APPEND ALL_DICTIONARIES_CMAKE_LINK_LIBRARIES
+    # "compact_trie::compact_trie"
+    # "trie::trie"
+    # "compact_trie2::compact_trie2"
+    # "dictionary_std_vector::dictionary_std_vector"
+    # "dictionary_std_set::dictionary_std_set"
+    # )
+# # These are used as template arguments for testing each dictionary
+# string(JOIN ", " ALL_DICTIONARY_CLASSES
+    # "compact_trie::CompactTrie"
+    # "trie::Trie"
+    # "compact_trie2::CompactTrie2"
+    # "dictionary_std_vector::DictionaryStdVector"
+    # "dictionary_std_set::DictionaryStdSet"
+    # )
+
+# add_library(config INTERFACE)
+# add_library(config::config ALIAS config)
+# target_sources(config INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/config.hpp")
+# target_include_directories(config INTERFACE "${CMAKE_CURRENT_BINARY_DIR}")
+# # Output dir is relative to CMAKE_CURRENT_BINARY_DIR by default
+# configure_file(config.hpp.in config.hpp @ONLY)
+
+# return()
+
+include(GNUInstallDirs)
+
+# Master/public library
+add_library(${PROJECT_NAME} INTERFACE)
+add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+target_include_directories(${PROJECT_NAME} INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    )
+target_sources(${PROJECT_NAME} INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/${PROJECT_NAME}/${PROJECT_NAME}.hpp>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/${PROJECT_NAME}.hpp>
+    )
+target_link_libraries(${PROJECT_NAME} INTERFACE
+    ${ALL_DICTIONARIES_CMAKE_LINK_LIBRARIES}
+    solver::solver
+    utility::utility
+    )
+
+
+# https://cmake.org/cmake/help/latest/module/CMakePackageConfigHelpers.html
+include(CMakePackageConfigHelpers)
+
+
+
+# Installs the headers and libs
+# install(TARGETS compact_trie)
+# install(TARGETS trie)
+# install(TARGETS compact_trie2)
+# install(TARGETS dictionary_std_vector)
+# install(TARGETS dictionary_std_set)
+# install(TARGETS ws)
+install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}-targets)
+
+# set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${HEADERS}")
+
+# install(TARGETS ${PROJECT_NAME} PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}/${PROJECT_NAME}")
+
+# Generate a targets file and install it
+install(EXPORT ${PROJECT_NAME}-targets
+        FILE ${PROJECT_NAME}-targets.cmake
+        NAMESPACE ${PROJECT_NAME}::
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
+         )
+
+####################################
+# https://cmake.org/cmake/help/latest/module/CMakePackageConfigHelpers.html
+
+# Generates a package version file in the build directory
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
+    VERSION 0.1.5
+    COMPATIBILITY AnyNewerVersion
+    )
+
+# Install the package version file to the install directory
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
+
+####################################
+
+# Generate a cmake package config file
+configure_package_config_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+  INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
+)
+
+# Install the package config file
+install(FILES
+          "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+          DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
+)
+
+
+install(FILES "${PROJECT_GENERATED_HEADER_BUILD_PATH}"
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}")
+
+# Disabled for now because if we run in webpage we run out of memory
+# If we run in node we get
+# /home/justin/cpp/ws3/build/bin/the_test.js:40
+# throw 'using preloaded data can only be done on a web page or in a web worker';
 enable_testing()
 add_subdirectory(test)
 
-# message("
-#     copy ${CMAKE_BINARY_DIR}/compile_commands.json ${PROJECT_SOURCE_DIR}")
-add_custom_target(${PROJECT_NAME}_after_all_built ALL)
-add_custom_command(TARGET ${PROJECT_NAME}_after_all_built POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E
-    copy "${CMAKE_BINARY_DIR}/compile_commands.json" "${PROJECT_SOURCE_DIR}"
-	)
+# add_library(ws INTERFACE)
+# target_link_libraries(ws INTERFACE
+    # "${ALL_DICTIONARIES_CMAKE_LINK_LIBRARIES}"
+    # solver::solver
+    # utility::utility
+    # )
 
-# add_custom_command(OUTPUT "non"
-# 	COMMAND "${CMAKE_COMMAND}" -E
-#     copy "${CMAKE_BINARY_DIR}/compile_commands.json" "${PROJECT_SOURCE_DIR}"
-#     DEPENDS dasf
-#     # DEPENDS "${PROJECT_NAME}" "${PROJECT_NAME}_main"
-#     )
 
-# target_compile_features(word_trie_lib PRIVATE cxx_std_17)
-# set_target_properties(word_trie_lib PROPERTIES CXX_EXTENSIONS OFF)
-# target_compile_options(word_trie_lib PRIVATE "${COMPILER_FLAGS}")
-# target_sources(word_trie_lib PUBLIC word_trie_lib.h)
-# target_include_directories(word_trie_lib PRIVATE ${CMAKE_CURRENT_LIST_DIR})
-# target_include_directories(word_trie_lib PUBLIC src)
+# include(CMakePackageConfigHelpers)
+# include(GNUInstallDirs)
 
-# install(
-#     TARGETS word_trie_lib
-#     EXPORT word_trie_lib-config
-#     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+# set(PACKAGE_VERSION 0.1)
+# write_basic_package_version_file(
+    # wordsearch_solver-config-version.cmake
+    # VERSION ${PACKAGE_VERSION}
+    # COMPATIBILITY ExactVersion
+    # )
+
+# # install(EXPORT wordsearch_solver-targets.cmake
+        # # DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/wordsearch_solver
+        # # FILE wordsearch_solver-targets.cmake
+        # # NAMESPACE wordsearch_solver::
+         # # )
 
 # install(
-# 	EXPORT word_trie_lib-config
-# 	NAMESPACE word_trie_lib::
-# 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/word_trie_lib)
+    # FILES wordsearch_solver-config.cmake
+        # ${CMAKE_BINARY_DIR}/wordsearch_solver-config-version.cmake
+    # DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/wordsearch_solver)
 
-# install(
-# 	DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/include
-# 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/word_trie_lib)
+# set_target_properties(solver PROPERTIES PUBLIC_HEADER
+    # "solver/include/solver.hpp;solver/include/solver.tpp")
+# install(TARGETS utility)
+# install(TARGETS solver)
 
+# install(TARGETS compact_trie)
+# install(TARGETS trie)
+# install(TARGETS compact_trie2)
+# install(TARGETS dictionary_std_vector)
+# install(TARGETS dictionary_std_set)
+# install(TARGETS ws)
 
-# add_executable(main main.cpp)
-# target_compile_features(main PRIVATE cxx_std_17)
-# set_target_properties(main PROPERTIES CXX_EXTENSIONS OFF)
-# target_compile_options(main PRIVATE "${COMPILER_FLAGS}")
+# add_executable(t test.cpp)
+# target_link_libraries(t ws)
 
-# target_link_libraries(main word_trie_lib fmt::fmt)
+# get_cmake_property(_variableNames VARIABLES)
+# list (SORT _variableNames)
+# foreach (_variableName ${_variableNames})
+    # message(STATUS "${_variableName}=${${_variableName}}")
+# endforeach()
 
-
-# add_library(word_trie_lib SHARED word_trie_lib.cpp)
-# target_compile_features(word_trie_lib PRIVATE cxx_std_17)
-# set_target_properties(word_trie_lib PROPERTIES CXX_EXTENSIONS OFF)
-# target_compile_options(word_trie_lib PRIVATE "${COMPILER_FLAGS}")
-# target_sources(word_trie_lib PUBLIC word_trie_lib.h)
-
-# set_target_properties(word_trie_lib PROPERTIES PUBLIC_HEADER word_trie_lib.h)
-
-
-# add_subdirectory(src)
-# add_subdirectory(test)
-# enable_testing()
-# catch_discover_tests(test)
+# install(FILES ws EXPORT wsconfig.cmake)
+# Install the library and headers.
+# install(TARGETS
+    # solver utility
+    # compact_trie
+    # trie
+    # compact_trie2
+    # dictionary_std_vector
+    # dictionary_std_set
+    # EXPORT wsconfig.cmake
+    # LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    # ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    # RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    # PRIVATE_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    # PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    # )
+# install(FILES wsconfig.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/wordsearch_solver)

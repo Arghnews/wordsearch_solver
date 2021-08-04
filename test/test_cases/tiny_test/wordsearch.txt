@@ -1,5 +1,5 @@
-S C C M K H
-P U F X M K
-C D P E Q D
-W W P Z R Z
-W C M S V S
+sccmkh
+pufxmk
+cdpeqd
+wwpzrz
+wcmsvs
