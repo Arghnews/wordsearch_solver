@@ -1,66 +1,132 @@
-//#include "prettyprint.hpp"
-
-// #include "wordsearch_solver.h"
-// #include "dictionary_std_set.h"
-// #include "dictionary_std_unordered_map.h"
-// #include "dictionary_std_vector.h"
-// #include "trie.hpp"
-// #include "compact_trie2.hpp"
-// #include "compact_trie.hpp"
-// #include "utility/utility.hpp"
-
 #include "wordsearch_solver/wordsearch_solver.hpp"
 
+#include <args-parser/all.hpp>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
+#include <gperftools/profiler.h>
+#include <range/v3/view/all.hpp>
 
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 #include <cstddef>
 #include <cstdio>
 #include <filesystem>
 #include <iostream>
+#include <map>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <thread>
+#include <utility>
+#include <variant>
 #include <vector>
 
-#include <args-parser/all.hpp>
+class SolverDictWrapper {
+  std::variant<WORDSEARCH_DICTIONARY_CLASSES> t_;
 
-#include <gperftools/profiler.h>
+  template <class Func> auto run(Func &&func) const {
+    return std::visit(std::forward<Func>(func), t_);
+  }
 
-using namespace std::literals;
+public:
+  template <class SolverDict, class Words>
+  SolverDictWrapper(const SolverDict &solver_dict, Words &&words)
+      : t_(solver_dict, std::forward<Words>(words)) {}
 
-// static const std::filesystem::path test_cases_dir = "../test/test_cases/";
+  std::size_t size() const {
+    return this->run([](const auto &t) { return t.size(); });
+  }
 
-// static const auto dict =
-// utility::read_file_as_lines(test_cases_dir / "dictionary.txt");
-// static const auto grid = solver::make_grid(
-// utility::read_file_as_lines(test_cases_dir /
-// "long_words/wordsearch.txt"));
-// static const auto grid =
-// solver::make_grid(utility::read_file_as_lines("massive_wordsearch.txt"));
+  bool empty() const {
+    return this->run([](const auto &t) { return t.empty(); });
+  }
 
-// struct SolverQueries {
+  bool contains(const std::string_view key) const {
+    return this->run([key](const auto &t) { return t.contains(key); });
+  }
 
-// };
+  bool further(const std::string_view key) const {
+    return this->run([key](const auto &t) { return t.further(key); });
+  }
 
-template <class Dict>
-std::size_t main_solve(const Dict &dict, const solver::WordsearchGrid &grid) {
-  std::puts("Solving");
-  ProfilerRestartDisabled();
-  ProfilerEnable();
-  const auto result = solver::solve(dict, grid);
-  return result.size();
-}
+  template <class OutputIndexIterator>
+  void contains_further(const std::string_view stem,
+                        const std::string_view suffixes,
+                        OutputIndexIterator contains_further) const {
+    return this->run([=](const auto &t) {
+      return t.contains_further(stem, suffixes, contains_further);
+    });
+  }
+};
 
-// This sucks. Way too much manual crap and no DRY...
-// Possible improvements.
-// - That magic_get c++17 compile time thing used in an enum library trick
-// would probably work.
-// - Overhaul the solvers file to have a class that has all this information
-// as this is getting too much.
+class SolverDictFactory {
+  std::vector<std::string> solvers;
+
+public:
+  SolverDictFactory() {
+#ifdef WORDSEARCH_SOLVER_HAS_trie
+    solvers.push_back("trie");
+#endif
+#ifdef WORDSEARCH_SOLVER_HAS_compact_trie
+    solvers.push_back("compact_trie");
+#endif
+#ifdef WORDSEARCH_SOLVER_HAS_compact_trie2
+    solvers.push_back("compact_trie2");
+#endif
+#ifdef WORDSEARCH_SOLVER_HAS_dictionary_std_vector
+    solvers.push_back("dictionary_std_vector");
+#endif
+#ifdef WORDSEARCH_SOLVER_HAS_dictionary_std_set
+    solvers.push_back("dictionary_std_set");
+#endif
+  }
+
+  bool has_solver(const std::string_view solver) const {
+    return std::find(solvers.begin(), solvers.end(), solver) != solvers.end();
+  }
+
+  // Return type subject to change
+  auto solver_names() const { return ranges::views::all(solvers); }
+
+  template <class Words>
+  auto make(const std::string_view solver, Words &&words) const {
+#ifdef WORDSEARCH_SOLVER_HAS_trie
+    if (solver == "trie") {
+      return SolverDictWrapper{std::in_place_type<trie::Trie>,
+                               std::forward<Words>(words)};
+    }
+#endif
+#ifdef WORDSEARCH_SOLVER_HAS_compact_trie
+    if (solver == "compact_trie") {
+      return SolverDictWrapper{std::in_place_type<compact_trie::CompactTrie>,
+                               std::forward<Words>(words)};
+    }
+#endif
+#ifdef WORDSEARCH_SOLVER_HAS_compact_trie2
+    if (solver == "compact_trie2") {
+      return SolverDictWrapper{std::in_place_type<compact_trie2::CompactTrie2>,
+                               std::forward<Words>(words)};
+    }
+#endif
+#ifdef WORDSEARCH_SOLVER_HAS_dictionary_std_vector
+    if (solver == "dictionary_std_vector") {
+      return SolverDictWrapper{
+          std::in_place_type<dictionary_std_vector::DictionaryStdVector>,
+          std::forward<Words>(words)};
+    }
+#endif
+#ifdef WORDSEARCH_SOLVER_HAS_dictionary_std_set
+    if (solver == "dictionary_std_set") {
+      return SolverDictWrapper{
+          std::in_place_type<dictionary_std_set::DictionaryStdSet>,
+          std::forward<Words>(words)};
+    }
+#endif
+    throw std::runtime_error(fmt::format("No such solver {}", solver));
+  }
+};
+
 // - Wait for 2050 when c++ has built in proper metaprogramming/static
 // reflection.
 
@@ -78,7 +144,8 @@ int main(int argc, char **argv) {
     // Can't figure out how to do groups with this garbage argparser library
     cmd.addArgWithNameOnly("solver", true, true);
     cmd.addHelp(true, argv[0],
-                "Usage: ./this --dict path/to/dict --wordsearch path/to/ws");
+                "Usage: ./this --dict path/to/dict --wordsearch path/to/ws "
+                "--solver trie");
 
     cmd.parse(argc, argv);
     dict_path = cmd.value("--dict");
@@ -97,34 +164,23 @@ int main(int argc, char **argv) {
   const auto grid =
       solver::make_grid(utility::read_file_as_lines(wordsearch_path));
 
-  std::vector<std::string> solvers;
-#ifdef WORDSEARCH_SOLVER_HAS_trie
-  if (solver == solvers.emplace_back("trie")) {
-    main_solve(trie::Trie{dict_lines}, grid);
+  const auto solvers = SolverDictFactory{};
+  if (!solvers.has_solver(solver)) {
+    throw std::runtime_error(fmt::format("No such solver: {}. Solvers: {}",
+                                         solver, solvers.solver_names()));
   }
-#endif
-#ifdef WORDSEARCH_SOLVER_HAS_compact_trie
-  else if (solver == solvers.emplace_back("compact_trie")) {
-    main_solve(compact_trie::CompactTrie{dict_lines}, grid);
-  }
-#endif
-#ifdef WORDSEARCH_SOLVER_HAS_compact_trie2
-  else if (solver == solvers.emplace_back("compact_trie2")) {
-    main_solve(compact_trie2::CompactTrie2{dict_lines}, grid);
-  }
-#endif
-#ifdef WORDSEARCH_SOLVER_HAS_dictionary_std_vector
-  else if (solver == solvers.emplace_back("dictionary_std_vector")) {
-    main_solve(dictionary_std_vector::DictionaryStdVector{dict_lines}, grid);
-  }
-#endif
-#ifdef WORDSEARCH_SOLVER_HAS_dictionary_std_set
-  else if (solver == solvers.emplace_back("dictionary_std_set")) {
-    main_solve(dictionary_std_set::DictionaryStdSet{dict_lines}, grid);
-  }
-#endif
-  else {
-    throw std::runtime_error(
-        fmt::format("Invalid solver, choose from: {}", solvers));
-  }
+
+  const auto solver_dict = solvers.make(solver, dict_lines);
+
+  ProfilerRestartDisabled();
+  ProfilerEnable();
+  const auto start = std::chrono::high_resolution_clock::now();
+  const auto result = solver::solve(solver_dict, grid);
+  const auto end = std::chrono::high_resolution_clock::now();
+  std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end -
+                                                                     start)
+                   .count()
+            << "\n";
+  return static_cast<int>(result.size());
+
 }

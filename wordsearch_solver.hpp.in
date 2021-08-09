@@ -1,0 +1,8 @@
+#ifndef @PROJECT_NAME_UPPERCASE@_HPP
+#define @PROJECT_NAME_UPPERCASE@_HPP
+
+#include "@PROJECT_NAME@/utility/utility.hpp"
+#include "@PROJECT_NAME@/config.hpp"
+#include "@PROJECT_NAME@/solver/solver.hpp"
+
+#endif // @PROJECT_NAME_UPPERCASE@_HPP

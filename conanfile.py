@@ -1,6 +1,10 @@
 from conans import ConanFile, CMake, tools
-import shutil
+
 import os
+import pathlib
+import re
+import shutil
+
 from distutils import dir_util
 import distutils
 
@@ -55,6 +59,7 @@ class WordsearchsolverConan(ConanFile):
 
     _cmake = None
 
+
     def source(self):
         #  self.run("git clone https://github.com/conan-io/hello.git")
         # This small hack might be useful to guarantee proper /MT /MD linkage
@@ -98,6 +103,11 @@ class WordsearchsolverConan(ConanFile):
     def package(self):
         #  cmake = self.configure_cmake()
         cmake = CMake(self)
+        # Check version numbers in version.cmake and self match
+        # Not sure in which conan method this check should really be
+        import os
+        print(os.getcwd())
+        assert pull_version_number("sauce/version.cmake", self.name) == self.version
         cmake.install()
         #  print("yam")
         #  print(self)
@@ -118,4 +128,19 @@ class WordsearchsolverConan(ConanFile):
 
 assert all(d in WordsearchsolverConan.options
         for d in WordsearchsolverConan._dict_impls)
+
+def pull_version_number(filepath, project_name):
+    version_file = pathlib.Path(filepath).read_text()
+    project_name = project_name.upper()
+
+    def get_component(version_part):
+        pattern = "set\({}_{} ([0-9]+)\)".format(project_name, version_part)
+        p = re.search(pattern, version_file)
+        assert p
+        return p.group(1)
+
+    major = get_component("MAJOR")
+    minor = get_component("MINOR")
+    patch = get_component("PATCH")
+    return ".".join((major, minor, patch))
 

@@ -11,7 +11,8 @@ do
         continue
     fi
     # echo "$f"
-    # # sed -i -E "s/^cmake_minimum_required\(VERSION (.*)\)$/cmake_minimum_required(VERSION 3.18)/" "$f"
+    # Change cmake minimum version
+    # # sed -i -E "s/^cmake_minimum_required\(VERSION (.*)\)$/cmake_minimum_required(VERSION 3.19)/" "$f"
 
     # line="$(grep "^#include \".*\"$" "$f")"
     # if [[ -z "$line" ]]

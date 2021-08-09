@@ -67,13 +67,13 @@ template <class T, std::size_t N>
 // llvm_small_vector
 using static_vector = boost::container::static_vector<T, N>;
 
-template <class Dict>
+template <class SolverDict>
 // std::unordered_map<std::string,
 // std::vector<std::vector<matrix2d::Index>>> Would like to express this
 // returns something with an interface like the above type. Perhaps just into
 // OutputIterator template type to avoid this altogether? (Need co_yield
 // really).
-void solve_index(const Dict &dict, const WordsearchGrid &grid,
+void solve_index(const SolverDict &solver_dict, const WordsearchGrid &grid,
                  const Index start_index,
                  WordToListOfListsOfIndexes &word_to_list_of_indexes) {
   // Coroutines in cppcoro needs libc++, ballache
@@ -159,8 +159,8 @@ void solve_index(const Dict &dict, const WordsearchGrid &grid,
 
     // const auto contains_further_start_time = now();
     // ProfilerDisable();
-    dict.contains_further(tail_string, suffixes_string,
-        std::back_inserter(contains_further));
+    solver_dict.contains_further(tail_string, suffixes_string,
+                                 std::back_inserter(contains_further));
     // ProfilerEnable();
     // time_spent_in_contains_further += now() - contains_further_start_time;
 
@@ -298,15 +298,16 @@ void solve_index(const Dict &dict, const WordsearchGrid &grid,
 #undef LOG
 }
 
-template <class Dict>
-WordToListOfListsOfIndexes solve(const Dict &dict, const WordsearchGrid &grid) {
+template <class SolverDict>
+WordToListOfListsOfIndexes solve(const SolverDict &solver_dict,
+                                 const WordsearchGrid &grid) {
   WordToListOfListsOfIndexes word_to_list_of_indexes;
 
   const auto rows = grid.rows_iter();
   for (const auto& [i, row]: ranges::views::enumerate(rows)) {
     for (const auto [j, elem]: ranges::views::enumerate(row)) {
       // fmt::print("Processing: {}, {}\n", i, j);
-      solve_index(dict, grid, Index{i, j}, word_to_list_of_indexes);
+      solve_index(solver_dict, grid, Index{i, j}, word_to_list_of_indexes);
     }
   }
   return word_to_list_of_indexes;

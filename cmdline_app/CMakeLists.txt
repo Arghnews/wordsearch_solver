@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.19)
 
 project(cmdline_app)
 # set(CMAKE_EXECUTABLE_SUFFIX ".html")
@@ -6,6 +6,7 @@ project(cmdline_app)
 find_package(args-parser REQUIRED)
 find_package(fmt REQUIRED)
 find_package(gperftools REQUIRED)
+find_package(range-v3 REQUIRED)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
 list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR})
@@ -21,6 +22,7 @@ target_link_libraries(cmdline_app PRIVATE
     args-parser::args-parser wordsearch_solver::wordsearch_solver
     fmt::fmt
     gperftools::gperftools
+    range-v3::range-v3
     )
 set_target_properties(cmdline_app PROPERTIES
     CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)

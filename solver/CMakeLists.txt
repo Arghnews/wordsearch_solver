@@ -1,9 +1,11 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.19)
 
 project(solver)
 
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH})
 set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR} ${CMAKE_PREFIX_PATH})
+# Assumed to be wordsearch_solver
+set(PARENT_PROJECT "${CMAKE_PROJECT_NAME}")
 
 find_package(fmt REQUIRED)
 find_package(range-v3 REQUIRED)
@@ -35,7 +37,7 @@ set(SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set(HEADERS "solver.hpp" "solver.tpp")
 set(SOURCES "solver.cpp")
 
-list(TRANSFORM HEADERS PREPEND "${INCLUDE_DIR}/wordsearch_solver/${PROJECT_NAME}/")
+list(TRANSFORM HEADERS PREPEND "${INCLUDE_DIR}/${PARENT_PROJECT}/${PROJECT_NAME}/")
 list(TRANSFORM SOURCES PREPEND "${SRC_DIR}/")
 
 add_library(${PROJECT_NAME} ${HEADERS} ${SOURCES})
@@ -55,19 +57,13 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     fmt::fmt
     range-v3::range-v3
     utility::utility
-    # static_vector::static_vector
     # "-s INITIAL_MEMORY=67108864"
     # "-s DISABLE_EXCEPTION_CATCHING=0"
     # "-O0"
     ${gprof}
     "${ALL_DICTIONARIES_CMAKE_LINK_LIBRARIES}"
     Boost::container
-    # matrix2d::matrix2d
-    # solver::solver
-    # range-v3::range-v3
-    # "${ALL_DICTIONARIES_CMAKE_LINK_LIBRARIES}"
-    # # matrix2d::matrix2d utility::utility
-    # ${CONAN_LIBS}
+    config::config
     )
 
 # EXCLUDE_FROM_ALL
@@ -78,12 +74,13 @@ include(GNUInstallDirs)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${HEADERS}")
 
-install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}-targets PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}/wordsearch_solver/${PROJECT_NAME}")
+install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}-targets PUBLIC_HEADER
+    DESTINATION "${INSTALL_INCLUDE_DIR}/${PARENT_PROJECT}/${PROJECT_NAME}")
 
 install(EXPORT ${PROJECT_NAME}-targets
         FILE ${PROJECT_NAME}-targets.cmake
         NAMESPACE ${PROJECT_NAME}::
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/wordsearch_solver/${PROJECT_NAME}"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PARENT_PROJECT}/${PROJECT_NAME}"
          )
 
 # Removed temporarily to allow cmake build only this

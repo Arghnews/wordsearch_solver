@@ -1,0 +1,9 @@
+- wordsearch_solver:: namespace around everything
+
+✓ Remove duplication of version in CMakeLists.txt and conanfile.py
+Add git hooks type check to ensure this
+
+- Better way to add solvers than the horrendous #ifdefs in cmdline_app/main.cpp
+
+
+
