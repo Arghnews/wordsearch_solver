@@ -10,6 +10,7 @@ do
     if [[ "$f" == "$0" ]]; then
         continue
     fi
+
     # echo "$f"
     # Change cmake minimum version
     # # sed -i -E "s/^cmake_minimum_required\(VERSION (.*)\)$/cmake_minimum_required(VERSION 3.19)/" "$f"

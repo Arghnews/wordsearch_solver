@@ -14,6 +14,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+add_library(link_std_filesystem INTERFACE IMPORTED)
+add_library(link_std_filesystem::link_std_filesystem ALIAS link_std_filesystem)
+target_link_libraries(link_std_filesystem INTERFACE
+    $<$<AND:$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>,$<PLATFORM_ID:Linux>>:stdc++fs>)
+
 # https://blog.kitware.com/cmake-and-the-default-build-type/
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(default_build_type "DEBUG")
@@ -36,24 +41,35 @@ string(APPEND CMAKE_CXX_FLAGS " ${COMPILER_FLAGS} ")
 # Don't want to build with sanitizers when installing with cmake or packaging,
 # otherwise downstream users MUST also enable sanitizers
 
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+
 set(DEVELOPER_FLAGS FALSE CACHE BOOL "Enable warning/sanitizer flags during development of library")
+set(USE_LINKER_FLAGS "")
 if (DEVELOPER_FLAGS)
     set(SANITISERS " -fsanitize=address,undefined ")
 endif()
 
+# Who doesn't have these?
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    string(APPEND USE_LINKER_FLAGS "-fuse-ld=lld")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    string(APPEND USE_LINKER_FLAGS "-fuse-ld=gold")
+endif()
+
 string(APPEND CMAKE_CXX_FLAGS_DEBUG " -g -O0 -fno-omit-frame-pointer ${SANITISERS} ")
 string(REPLACE "-DNDEBUG" "" CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
-string(APPEND CMAKE_CXX_FLAGS_RELWITHDEBINFO " -g -O2 -march=native -flto -fno-omit-frame-pointer ${SANITISERS} ")
-string(APPEND CMAKE_CXX_FLAGS_RELEASE " -g -O3 -march=native -flto -DNDEBUG ")
+string(APPEND CMAKE_CXX_FLAGS_RELWITHDEBINFO " -g -O2 -march=native -fno-omit-frame-pointer ${SANITISERS} ")
+string(APPEND CMAKE_CXX_FLAGS_RELEASE " -g -O3 -march=native -DNDEBUG ")
 
 # string(APPEND CMAKE_EXE_LINKER_FLAGS_DEBUG " -flto -fno-omit-frame-pointer ${SANITISERS} -fuse-ld=lld ")
 # string(APPEND CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO " -flto -fno-omit-frame-pointer ${SANITISERS} -fuse-ld=lld ")
 # string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " -flto -fuse-ld=lld ")
-string(APPEND CMAKE_EXE_LINKER_FLAGS_DEBUG " -flto -fno-omit-frame-pointer ")
-string(APPEND CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO " -flto -fno-omit-frame-pointer ${SANITISERS} ")
-string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " -flto ")
+string(APPEND CMAKE_EXE_LINKER_FLAGS " ${USE_LINKER_FLAGS} ")
+string(APPEND CMAKE_EXE_LINKER_FLAGS_DEBUG " -fno-omit-frame-pointer ${SANITISERS} ")
+string(APPEND CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO " -fno-omit-frame-pointer ${SANITISERS} ")
+string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " ")
 
-
+string(APPEND CMAKE_SHARED_LINKER_FLAGS "${USE_LINKER_FLAGS}")
 
 # Usage:
 # make_compile_commands(
@@ -164,7 +180,7 @@ set(PROJECT_INCLUDE_PROJECT_DIR "${PROJECT_INCLUDE_DIR}/${PROJECT_NAME}")
 
 
 # Generate project master header file to be included
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}.hpp.in"
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}.hpp.in"
     "${PROJECT_INCLUDE_PROJECT_DIR}/${PROJECT_NAME}.hpp"
     @ONLY)
 
@@ -203,6 +219,11 @@ add_subdirectory(benchmark)
 add_subdirectory(cmdline_app)
 
 
+# Currently cmake for the example is putting -lcompact_trie -lcompact_trie2 -ltrie -lsolver, then undefined refs for the compact ones with lto.
+# lto with gcc8 just seems broken. Move solver to front, or use lld for fix.
+
+# Thoughts: either give up on gcc
+# Or just use gcc with lld + ffatlto
 
 # Master/public library
 add_library(${PROJECT_NAME} INTERFACE)

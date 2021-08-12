@@ -28,11 +28,6 @@
 // TODO: maybe look into units library for the ascii/index conversion stuff, as
 // that has already wasted a significant amount of time with offset stuff
 
-namespace
-{
-
-}
-
 namespace trie
 {
 
@@ -158,77 +153,6 @@ bool further(const Node& node, const std::string_view word)
   const auto* p = search(node, word);
   return p && p->any();
 }
-
-// Trie::NodesIterator follow(const Trie::NodesIterator node_it,
-    // Trie::RowsIterator rows_it,
-    // const std::uint8_t index,
-    // const Trie::NodesIterator nodes_end,
-    // const Trie::RowsIterator rows_end)
-// {
-  // assert(node_it != nodes_end);
-  // assert(rows_it != rows_end);
-
-  // if (!node_it->test(index) || ++rows_it == rows_end)
-  // {
-    // return nodes_end;
-  // }
-
-  // const auto before_node = node_it->preceding();
-  // const auto before_in_node = node_it->bits_on_before(index);
-  // const auto preceding = before_node + before_in_node;
-
-  // return *rows_it + static_cast<long>(preceding);
-// }
-
-// Trie::const_iterator search(const std::string_view word,
-    // const ranges::subrange<Trie::NodesIterator> nodes,
-    // const ranges::subrange<Trie::RowsIterator> rows)
-// {
-  // if (nodes.empty())
-  // {
-    // return {nodes.end(), rows.end()};
-  // }
-
-  // auto it = nodes.begin();
-  // auto rows_it = rows.begin();
-
-  // // const bool use_cache = nodes.begin() == nodes_.begin();
-  // // if (use_cache)
-  // // {
-    // // if (const auto cached_result = cache_.lookup(word))
-    // // {
-      // // const auto [elems_consumed, value] = *cached_result;
-      // // word.remove_prefix(elems_consumed);
-      // // std::tie(it, rows_it) = value;
-    // // }
-  // // }
-
-  // for (const auto c: word)
-  // {
-    // // fmt::print("\nFollowing: {}\n", c);
-
-    // const auto next_it = follow(it, rows_it, static_cast<std::uint8_t>(
-          // c), nodes.end(), rows.end());
-    // if (next_it == nodes.end())
-    // {
-      // assert(it != nodes.end());
-      // assert(rows_it != rows.end());
-      // return {it, rows_it};
-    // }
-    // // fmt::print("Node now: {}, row: {}, row_index: {}\n", *next_it,
-        // // rows_it - rows.begin(), it - nodes.begin() + *rows_it);
-    // it = next_it;
-    // ++rows_it;
-    // // if (use_cache)
-    // // {
-      // // cache_.append(c, {it, rows_it});
-    // // }
-  // }
-  // assert(it != nodes.end());
-  // assert(rows_it != rows.end());
-  // return {it, rows_it};
-// }
-
 }
 
 }

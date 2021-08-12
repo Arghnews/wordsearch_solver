@@ -7,30 +7,22 @@ set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR} ${CMAKE_PREFIX_PATH})
 
 find_package(range-v3 REQUIRED)
 find_package(fmt REQUIRED)
-# find_package(solver_utility REQUIRED)
 find_package(Catch2 REQUIRED)
 
 if(EMSCRIPTEN)
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
 endif()
 
-add_executable(${PROJECT_NAME} test_cases.cpp test_cases2.cpp test_catch_main.cpp test_cases.hpp)
+add_executable(${PROJECT_NAME} test_catch_main.cpp test_cases.cpp test_cases2.cpp test_cases.hpp)
 # add_test(NAME ${PROJECT_NAME} COMMAND /usr/bin/node ${PROJECT_NAME})
-target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+# target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
 target_link_libraries(${PROJECT_NAME} PUBLIC
-    # utility::utility
-    # range-v3::range-v3
-    # fmt::fmt
     Catch2::Catch2
     fmt::fmt
     range-v3::range-v3
     wordsearch_solver::wordsearch_solver
-    # "-O0"
-    # solver_utility::solver_utility
-    # config::config
-    # solver::solver
+    link_std_filesystem::link_std_filesystem
     # Add -lstdc++fs if using clang and on linux
-    $<IF:$<AND:$<CXX_COMPILER_ID:Clang>,$<PLATFORM_ID:Linux>>,"stdc++fs","">
   )
 
 if(EMSCRIPTEN)
@@ -109,16 +101,6 @@ else()
         COMMAND "${node_path}" "${test_executable}"
         WORKING_DIRECTORY "${runtime_output_dir}")
 endif()
-
-# message("Looking for camke stuff ${CMAKE_CURRENT_SOURCE_DIR}")
-# message("Looking for camke stuff ${CMAKE_CURRENT_BINARY_DIR}")
-# message("Looking for camke stuff ${CMAKE_CURRENT_LIST_DIR}")
-
-# get_cmake_property(_variableNames VARIABLES)
-# list (SORT _variableNames)
-# foreach (_variableName ${_variableNames})
-    # message(STATUS "${_variableName}=${${_variableName}}")
-# endforeach()
 
 # include(CTest)
 # include(Catch)

@@ -12,6 +12,7 @@
 #include <memory>
 #include <ostream>
 #include <string_view>
+#include <type_traits>
 #include <vector>
 
 namespace trie
@@ -61,6 +62,15 @@ class Node
   Edges edges_;
   bool is_end_of_word_;
 };
+
+// https://stackoverflow.com/a/18405291/8594193
+// Assuming the currently used boost::container::small_vector follows
+// std::vector, this type satisfies the type trait,
+// std::is_copy_constructible_v even though it's a container of
+// std::unique_ptr s and therefore clearly should not be copy constructible,
+// at least now with a defaulted copy constructor
+// static_assert(std::is_copy_constructible_v<Edges>);
+// static_assert(std::is_copy_constructible_v<Node>);
 
 const Node* search(const Node& node, std::string_view word);
 

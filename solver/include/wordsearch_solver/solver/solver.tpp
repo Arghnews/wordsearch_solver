@@ -1,8 +1,8 @@
 #ifndef SOLVER_TPP
 #define SOLVER_TPP
 
-#include "wordsearch_solver/solver/solver.hpp"
 #include "matrix2d/matrix2d.hpp"
+#include "wordsearch_solver/wordsearch_solver.hpp"
 
 // #ifndef __EMSCRIPTEN__
 // #include <gperftools/profiler.h>
@@ -312,6 +312,63 @@ WordToListOfListsOfIndexes solve(const SolverDict &solver_dict,
   }
   return word_to_list_of_indexes;
 }
+
+template <class Func> auto SolverDictWrapper::run(Func &&func) const {
+  return std::visit(std::forward<Func>(func), t_);
 }
+
+template <class SolverDict, class Words>
+SolverDictWrapper::SolverDictWrapper(const SolverDict &solver_dict,
+                                     Words &&words)
+    : t_(solver_dict, std::forward<Words>(words)) {}
+
+template <class OutputIndexIterator>
+void SolverDictWrapper::contains_further(
+    const std::string_view stem, const std::string_view suffixes,
+    OutputIndexIterator contains_further) const {
+  return this->run([=](const auto &t) {
+    return t.contains_further(stem, suffixes, contains_further);
+  });
+}
+
+template <class Words>
+SolverDictWrapper SolverDictFactory::make(const std::string_view solver,
+                                          Words &&words) const {
+#ifdef WORDSEARCH_SOLVER_HAS_trie
+  if (solver == "trie") {
+    return SolverDictWrapper{std::in_place_type<trie::Trie>,
+                             std::forward<Words>(words)};
+  }
+#endif
+#ifdef WORDSEARCH_SOLVER_HAS_compact_trie
+  if (solver == "compact_trie") {
+    return SolverDictWrapper{std::in_place_type<compact_trie::CompactTrie>,
+                             std::forward<Words>(words)};
+  }
+#endif
+#ifdef WORDSEARCH_SOLVER_HAS_compact_trie2
+  if (solver == "compact_trie2") {
+    return SolverDictWrapper{std::in_place_type<compact_trie2::CompactTrie2>,
+                             std::forward<Words>(words)};
+  }
+#endif
+#ifdef WORDSEARCH_SOLVER_HAS_dictionary_std_vector
+  if (solver == "dictionary_std_vector") {
+    return SolverDictWrapper{
+        std::in_place_type<dictionary_std_vector::DictionaryStdVector>,
+        std::forward<Words>(words)};
+  }
+#endif
+#ifdef WORDSEARCH_SOLVER_HAS_dictionary_std_set
+  if (solver == "dictionary_std_set") {
+    return SolverDictWrapper{
+        std::in_place_type<dictionary_std_set::DictionaryStdSet>,
+        std::forward<Words>(words)};
+  }
+#endif
+  throw std::runtime_error(fmt::format("No such solver {}", solver));
+}
+
+} // namespace solver
 
 #endif // SOLVER_TPP

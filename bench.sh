@@ -2,6 +2,22 @@
 
 set -o pipefail
 
+function finish() {
+    sudo cpupower frequency-set --governor powersave 1>/dev/null
+}
+
+trap finish EXIT
+
+(
+# benchmark CPU scaling is enabled fix
+sudo cpupower frequency-set --governor performance 1>/dev/null
+cd build/benchmark
+
+taskset 01 ./bench --benchmark_filter=init
+
+taskset 01 ./bench --benchmark_filter=long_words
+)
+
 # https://unix.stackexchange.com/a/326585/358344
 # in /etc/default/grub: GRUB_CMDLINE_LINUX_DEFAULT+=" isolcpus=0"
 # taskset 01 corresponds to cpu 0 that is isolated now

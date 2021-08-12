@@ -66,14 +66,7 @@ class CompactTrie
   template<class Strings>
   explicit CompactTrie(Strings&& strings_in);
 
-  bool contains(std::string_view word,
-      ranges::subrange<NodesIterator> nodes,
-      ranges::subrange<RowsIterator> rows) const;
   bool contains(std::string_view word) const;
-
-  bool further(std::string_view word,
-      ranges::subrange<NodesIterator> nodes,
-      ranges::subrange<RowsIterator> rows) const;
   bool further(std::string_view word) const;
 
   template<class OutputIterator>
@@ -84,13 +77,18 @@ class CompactTrie
   std::size_t size() const;
   bool empty() const;
 
-  private:
+  friend std::ostream &operator<<(std::ostream &os, const CompactTrie &ct);
+
+private:
+  bool contains(std::string_view word, ranges::subrange<NodesIterator> nodes,
+                ranges::subrange<RowsIterator> rows) const;
+
+  bool further(std::string_view word, ranges::subrange<NodesIterator> nodes,
+               ranges::subrange<RowsIterator> rows) const;
+
   CompactTrie::const_iterator search(std::string_view word,
       ranges::subrange<CompactTrie::NodesIterator> nodes,
       ranges::subrange<CompactTrie::RowsIterator> rows) const;
-
-
-  friend std::ostream& operator<<(std::ostream& os, const CompactTrie& ct);
 
   Nodes nodes_;
   Rows rows_;

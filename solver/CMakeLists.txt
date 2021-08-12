@@ -61,9 +61,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     # "-s DISABLE_EXCEPTION_CATCHING=0"
     # "-O0"
     ${gprof}
-    "${ALL_DICTIONARIES_CMAKE_LINK_LIBRARIES}"
     Boost::container
     config::config
+    ${ALL_DICTIONARIES_CMAKE_LINK_LIBRARIES}
     )
 
 # EXCLUDE_FROM_ALL

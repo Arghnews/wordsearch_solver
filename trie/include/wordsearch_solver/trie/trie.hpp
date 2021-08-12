@@ -21,8 +21,6 @@
 #include <utility>
 #include <vector>
 
-// This might ACTUALLY be a case for inheritance what with the Trie being
-// a Trie?
 // TODO: test this with const_iterator not a std::tuple, and try a simple user
 // defined struct/pointer to make trivial type to help the optimiser? Not even
 // sure if "trivial" means what I think it does anyway, remove this likely..
@@ -44,8 +42,9 @@ class Trie
   Trie(Trie&&) = default;
   Trie& operator=(Trie&&) = default;
 
-  Trie(const Trie&) = delete;
-  Trie& operator=(const Trie&) = delete;
+  // See trie/node.hpp before changing this, must implement proper deep copy
+  Trie(const Trie &) = delete;
+  Trie &operator=(const Trie &) = delete;
 
   Trie(const std::initializer_list<std::string_view>& words);
   Trie(const std::initializer_list<std::string>& words);
@@ -54,6 +53,8 @@ class Trie
   template<class Iterator1, class Iterator2>
   Trie(Iterator1 first, const Iterator2 last);
 
+  // TODO: constrain this (sfinae or concepts(>=c++20))
+  // Strings should be a range of strings
   template<class Strings>
   explicit Trie(Strings&& strings_in);
 

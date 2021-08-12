@@ -39,11 +39,17 @@ target_include_directories(${PROJECT_NAME} INTERFACE
 # However that means that consumers of this from cmake won't get the flag
 # so we set it here instead. This assumes libstdc++.
 
+# Problem with putting this in target_link_libraries:
+# $<IF:$<AND:$<CXX_COMPILER_ID:Clang>,$<PLATFORM_ID:Linux>>,"stdc++fs","">
+# If you're the IF is false, cmake then helpfully appends -l"" to your link options
+
+    # $<:$<AND:$<CXX_COMPILER_ID:Clang>,$<PLATFORM_ID:Linux>>,"stdc++fs">
+    # $<IF:$<AND:$<CXX_COMPILER_ID:Clang>,$<PLATFORM_ID:Linux>>,"stdc++fs","">
+
 target_link_libraries(${PROJECT_NAME} INTERFACE
     fmt::fmt
     range-v3::range-v3
-    $<IF:$<AND:$<CXX_COMPILER_ID:Clang>,$<PLATFORM_ID:Linux>>,"stdc++fs","">
-    # -lstdc++fs
+    link_std_filesystem::link_std_filesystem
     )
 
 include(GNUInstallDirs)

@@ -10,7 +10,7 @@ import distutils
 
 class WordsearchsolverConan(ConanFile):
     name = "wordsearch_solver"
-    version = "0.1.5"
+    version = "0.1.7"
     license = "MIT"
     author = "Justin Riddell arghnews@hotmail.co.uk"
     url = "<Package recipe repository url here, for issues about the package>"
@@ -47,7 +47,8 @@ class WordsearchsolverConan(ConanFile):
             #  "boost_iterator/[>=1.69.0]@bincrafters/stable",
             "catch2/[>=2.13.0]",
             "benchmark/[>=1.5.3]",
-            "args-parser/[>=6.1.1]",
+            #  "args-parser/[>=6.1.1]", # Pretty crap
+            "cxxopts/[>=2.2.1]",
             "gperftools/[>=0.1.1]@arghnews/testing",
             #  "boost_container/1.69.0@bincrafters/stable",
             #  "llvm_small_vector/0.1",
@@ -59,72 +60,38 @@ class WordsearchsolverConan(ConanFile):
 
     _cmake = None
 
-
     def source(self):
-        #  self.run("git clone https://github.com/conan-io/hello.git")
-        # This small hack might be useful to guarantee proper /MT /MD linkage
-        # in MSVC if the packaged project doesn't have variables to set it
-        # properly
-        #  self.copy("*", src = "/home/justin/cpp/ws", keep_path = True)
-        # https://stackoverflow.com/a/1994840/8594193
-        #  shutil.copytree("/home/justin/cpp/ws", "source_subfolder")
-        dir_util.copy_tree("/home/justin/cpp/ws3", "sauce")
-        #  def source_folder(self):
-        #  return "source_subfolder"
-
-    #  def configure_cmake(self):
-        #  if self._cmake:
-            #  return self._cmake
-        #  self._cmake = CMake(self)
-        #  #  self._cmake.configure(source_folder = "source")
-        #  self._cmake.configure(source_folder = "sauce")
-        #  return self._cmake
+        git = tools.Git(folder="source_subfolder")
+        git.clone("https://github.com/Arghnews/wordsearch_solver", shallow=True)
+        #  dir_util.copy_tree("/home/justin/cpp/ws3", "source_subfolder")
 
     def build(self):
         cmake = CMake(self)
 
         assert all(d in self.options for d in self._dict_impls)
-        #  print(self.options)
-        #  for d in self._dict_impls:
-            #  print(d)
-            #  print(self.options[d])
         cmake.definitions["WORDSEARCH_SOLVERS"] = ";".join(dict_impl
                 for dict_impl in self._dict_impls
                 if self.options.get_safe(dict_impl))
-        #  print("WS: ", cmake.definitions["WORDSEARCH_SOLVERS"])
-        cmake.configure(source_folder = "sauce")
+        cmake.configure(source_folder="source_subfolder")
         cmake.build()
         cmake.test()
-        # Explicit way:
-        # self.run('cmake %s/hello %s'
-        #          % (self.source_folder, cmake.command_line))
-        # self.run("cmake --build . %s" % cmake.build_config)
 
     def package(self):
-        #  cmake = self.configure_cmake()
         cmake = CMake(self)
         # Check version numbers in version.cmake and self match
         # Not sure in which conan method this check should really be
-        import os
-        print(os.getcwd())
-        assert pull_version_number("sauce/version.cmake", self.name) == self.version
+        assert (pull_version_number("source_subfolder/version.cmake",
+            self.name) == self.version)
         cmake.install()
-        #  print("yam")
-        #  print(self)
-        #  print(type(self))
-        #  cmake = CMake(self)
-        #  print("moo")
-        #  cmake.install()
-        #  self.copy("*.h", dst="include", src="hello")
-        #  self.copy("*hello.lib", dst="lib", keep_path=False)
-        #  self.copy("*.dll", dst="bin", keep_path=False)
-        #  self.copy("*.so", dst="lib", keep_path=False)
-        #  self.copy("*.dylib", dst="lib", keep_path=False)
-        #  self.copy("*.a", dst="lib", keep_path=False)
 
     def package_info(self):
-        # TODO: implement this if want to be able to use library from not cmake
         self.cpp_info.libs = tools.collect_libs(self)
+        # https://stackoverflow.com/a/409470/8594193
+        # Dumbass g++ linking order, static lib solver depends on implementation
+        # libs, so solver must be first
+        self.cpp_info.libs.remove("solver")
+        self.cpp_info.libs.insert(0, "solver")
+        #  print("The libs: ", self.cpp_info.libs)
 
 assert all(d in WordsearchsolverConan.options
         for d in WordsearchsolverConan._dict_impls)

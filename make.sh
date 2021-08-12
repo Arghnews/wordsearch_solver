@@ -4,8 +4,8 @@ set -u -o pipefail
 set -e
 
 build_type=Debug
-# wordsearch_solvers="trie;compact_trie;dictionary_std_vector"
-wordsearch_solvers="trie"
+wordsearch_solvers="trie;compact_trie;dictionary_std_vector"
+# wordsearch_solvers="trie"
 
 if [ -n "$wordsearch_solvers" ]; then
     wordsearch_solvers="-DWORDSEARCH_SOLVERS=$wordsearch_solvers"

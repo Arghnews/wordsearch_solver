@@ -6,7 +6,7 @@ class TestProjectConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     generators = "cmake_find_package"
     requires = ("fmt/[>=7.0.2]", "imgui_my/[>=0.2.3]@arghnews/testing",
-            "wordsearch_solver/0.1.5", "gperftools/0.1.1@arghnews/testing")
+            "wordsearch_solver/[>=0.1.6]@arghnews/testing", "gperftools/0.1.1@arghnews/testing")
 
     def build(self):
         cmake = CMake(self)
