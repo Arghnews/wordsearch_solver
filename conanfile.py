@@ -1,21 +1,18 @@
 from conans import ConanFile, CMake, tools
 
-import os
 import pathlib
 import re
-import shutil
 
 from distutils import dir_util
-import distutils
 
 class WordsearchsolverConan(ConanFile):
     name = "wordsearch_solver"
     version = "0.1.7"
     license = "MIT"
     author = "Justin Riddell arghnews@hotmail.co.uk"
-    url = "<Package recipe repository url here, for issues about the package>"
-    description = "<Description of Wordsearchsolver here>"
-    topics = ("<Put some tag here>", "<here>", "<and here>")
+    url = "https://github.com/Arghnews/wordsearch_solver"
+    description = "Wordsearch solver"
+    topics = ("c++", "wordsearch")
     settings = "os", "compiler", "build_type", "arch"
 
     options = {"shared": [True, False],
@@ -57,8 +54,6 @@ class WordsearchsolverConan(ConanFile):
     _dict_impls = ["trie", "compact_trie", "compact_trie2",
             "dictionary_std_set", "dictionary_std_vector",
             ]
-
-    _cmake = None
 
     def source(self):
         git = tools.Git(folder="source_subfolder")
