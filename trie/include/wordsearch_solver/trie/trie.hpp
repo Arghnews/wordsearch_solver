@@ -31,48 +31,44 @@
 // std::bitset that is 4 bytes big changes performance due to whole thing being
 // approx half size (better for cache).
 
-namespace trie
-{
+namespace trie {
 
-class Trie
-{
-  public:
+class Trie {
+public:
   Trie() = default;
 
   Trie(Trie&&) = default;
   Trie& operator=(Trie&&) = default;
 
   // See trie/node.hpp before changing this, must implement proper deep copy
-  Trie(const Trie &) = delete;
-  Trie &operator=(const Trie &) = delete;
+  Trie(const Trie&) = delete;
+  Trie& operator=(const Trie&) = delete;
 
   Trie(const std::initializer_list<std::string_view>& words);
   Trie(const std::initializer_list<std::string>& words);
   Trie(const std::initializer_list<const char*>& words);
 
-  template<class Iterator1, class Iterator2>
+  template <class Iterator1, class Iterator2>
   Trie(Iterator1 first, const Iterator2 last);
 
   // TODO: constrain this (sfinae or concepts(>=c++20))
   // Strings should be a range of strings
-  template<class Strings>
-  explicit Trie(Strings&& strings_in);
+  template <class Strings> explicit Trie(Strings&& strings_in);
 
   bool contains(std::string_view word) const;
   bool further(std::string_view word) const;
 
-  template<class OutputIterator>
+  template <class OutputIterator>
   void contains_further(const std::string_view stem,
-      const std::string_view suffixes,
-      OutputIterator contains_further_it) const;
+                        const std::string_view suffixes,
+                        OutputIterator contains_further_it) const;
 
   std::size_t size() const;
   bool empty() const;
 
   friend std::ostream& operator<<(std::ostream& os, const Trie& ct);
 
-  private:
-
+private:
   const Node* search(std::string_view word) const;
   std::pair<Node*, bool> insert(std::string_view word);
 
@@ -81,15 +77,14 @@ class Trie
   mutable utility::FlatCharValueMap<const Node*> cache_;
 };
 
-namespace detail
-{
+namespace detail {
 
 bool contains(const Node& node, std::string_view word);
 bool further(const Node& node, std::string_view word);
 
-}
+} // namespace detail
 
-}
+} // namespace trie
 
 #include "wordsearch_solver/trie/trie.tpp"
 

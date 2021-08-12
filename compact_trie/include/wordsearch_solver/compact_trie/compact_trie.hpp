@@ -34,13 +34,10 @@
 // std::bitset that is 4 bytes big changes performance due to whole thing being
 // approx half size (better for cache).
 
-namespace compact_trie
-{
+namespace compact_trie {
 
-class CompactTrie
-{
-  public:
-
+class CompactTrie {
+public:
   using Nodes = std::vector<Node>;
   using NodesIterator = std::vector<Node>::const_iterator;
   using Rows = std::vector<NodesIterator>;
@@ -60,24 +57,22 @@ class CompactTrie
   CompactTrie(const std::initializer_list<std::string>& words);
   CompactTrie(const std::initializer_list<const char*>& words);
 
-  template<class Iterator1, class Iterator2>
+  template <class Iterator1, class Iterator2>
   CompactTrie(Iterator1 first, const Iterator2 last);
 
-  template<class Strings>
-  explicit CompactTrie(Strings&& strings_in);
+  template <class Strings> explicit CompactTrie(Strings&& strings_in);
 
   bool contains(std::string_view word) const;
   bool further(std::string_view word) const;
 
-  template<class OutputIterator>
-  void contains_further(std::string_view stem,
-      std::string_view suffixes,
-      OutputIterator contains_further_it) const;
+  template <class OutputIterator>
+  void contains_further(std::string_view stem, std::string_view suffixes,
+                        OutputIterator contains_further_it) const;
 
   std::size_t size() const;
   bool empty() const;
 
-  friend std::ostream &operator<<(std::ostream &os, const CompactTrie &ct);
+  friend std::ostream& operator<<(std::ostream& os, const CompactTrie& ct);
 
 private:
   bool contains(std::string_view word, ranges::subrange<NodesIterator> nodes,
@@ -86,16 +81,17 @@ private:
   bool further(std::string_view word, ranges::subrange<NodesIterator> nodes,
                ranges::subrange<RowsIterator> rows) const;
 
-  CompactTrie::const_iterator search(std::string_view word,
-      ranges::subrange<CompactTrie::NodesIterator> nodes,
-      ranges::subrange<CompactTrie::RowsIterator> rows) const;
+  CompactTrie::const_iterator
+  search(std::string_view word,
+         ranges::subrange<CompactTrie::NodesIterator> nodes,
+         ranges::subrange<CompactTrie::RowsIterator> rows) const;
 
   Nodes nodes_;
   Rows rows_;
   std::size_t size_;
 };
 
-}
+} // namespace compact_trie
 
 #include "wordsearch_solver/compact_trie/compact_trie.tpp"
 

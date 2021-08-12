@@ -18,7 +18,7 @@
 // - Wait for 2050 when c++ has built in proper metaprogramming/static
 // reflection.
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   auto options =
       cxxopts::Options("wordsearch_solver_cmdline_app",
                        "Command line app to benchmark wordsearch_solver");
@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
 
   try {
     dict_path = parsed_args["dictionary"].as<std::string>();
-  } catch (const std::domain_error &e) {
+  } catch (const std::domain_error& e) {
     std::cerr << "dictionary argument required"
               << "\n";
     throw;
@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
 
   try {
     wordsearch_path = parsed_args["wordsearch"].as<std::string>();
-  } catch (const std::domain_error &e) {
+  } catch (const std::domain_error& e) {
     std::cerr << "wordsearch argument required"
               << "\n";
     throw;
@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
 
   try {
     solver = parsed_args["solver"].as<std::string>();
-  } catch (const std::domain_error &e) {
+  } catch (const std::domain_error& e) {
     std::cerr << "solver argument required"
               << "\n";
     throw;

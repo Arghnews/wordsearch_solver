@@ -14,19 +14,18 @@
 
 namespace solver {
 
-WordsearchGrid make_grid(const std::vector<std::string> &lines) {
+WordsearchGrid make_grid(const std::vector<std::string>& lines) {
 
   const auto longest_word = ranges::accumulate(
-      lines,
-      std::remove_reference_t<decltype(lines)>::size_type{0},
-      [] (const auto a, const auto b) { return ranges::max(a, b); },
+      lines, std::remove_reference_t<decltype(lines)>::size_type{0},
+      [](const auto a, const auto b) { return ranges::max(a, b); },
       ranges::size);
 
   WordsearchGrid grid(lines.size(), longest_word);
   auto rows_iter = grid.rows_iter();
   auto it = rows_iter.begin();
   [[maybe_unused]] const auto last = rows_iter.end();
-  for (const auto& line: lines) {
+  for (const auto& line : lines) {
     assert(it != last);
     std::copy(line.begin(), line.end(), it->begin());
     ++it;
@@ -35,19 +34,19 @@ WordsearchGrid make_grid(const std::vector<std::string> &lines) {
 }
 
 std::size_t SolverDictWrapper::size() const {
-  return this->run([](const auto &t) { return t.size(); });
+  return this->run([](const auto& t) { return t.size(); });
 }
 
 bool SolverDictWrapper::empty() const {
-  return this->run([](const auto &t) { return t.empty(); });
+  return this->run([](const auto& t) { return t.empty(); });
 }
 
 bool SolverDictWrapper::contains(const std::string_view key) const {
-  return this->run([key](const auto &t) { return t.contains(key); });
+  return this->run([key](const auto& t) { return t.contains(key); });
 }
 
 bool SolverDictWrapper::further(const std::string_view key) const {
-  return this->run([key](const auto &t) { return t.further(key); });
+  return this->run([key](const auto& t) { return t.further(key); });
 }
 
 SolverDictFactory::SolverDictFactory() {

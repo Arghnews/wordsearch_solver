@@ -59,8 +59,7 @@
 // for tail and suffixes, and then inherit with Matrix2d one? Wow actual
 // inheritance, my god, or just compose really?
 
-namespace solver
-{
+namespace solver {
 
 template <class T, std::size_t N>
 // using static_vector = std::experimental::fixed_capacity_vector<T, N>;
@@ -73,9 +72,9 @@ template <class SolverDict>
 // returns something with an interface like the above type. Perhaps just into
 // OutputIterator template type to avoid this altogether? (Need co_yield
 // really).
-void solve_index(const SolverDict &solver_dict, const WordsearchGrid &grid,
+void solve_index(const SolverDict& solver_dict, const WordsearchGrid& grid,
                  const Index start_index,
-                 WordToListOfListsOfIndexes &word_to_list_of_indexes) {
+                 WordToListOfListsOfIndexes& word_to_list_of_indexes) {
   // Coroutines in cppcoro needs libc++, ballache
   // Folly coroutines unclear if need it
   // Going to try boost coroutine2 for now at least as already installed
@@ -90,7 +89,7 @@ void solve_index(const SolverDict &solver_dict, const WordsearchGrid &grid,
   }
 
 #define LOG(...)
-// #define LOG fmt::print
+  // #define LOG fmt::print
 
   const auto rows = grid.rows();
   const auto cols = grid.columns();
@@ -101,9 +100,7 @@ void solve_index(const SolverDict &solver_dict, const WordsearchGrid &grid,
   LOG("rows x cols = {} * {}\n", rows, cols);
   LOG("Start index: {}", start_index);
 
-  const auto index_to_char = [&grid] (const auto index) {
-    return grid(index);
-  };
+  const auto index_to_char = [&grid](const auto index) { return grid(index); };
 
   std::vector<static_vector<Index, 8>> q;
 
@@ -170,9 +167,10 @@ void solve_index(const SolverDict &solver_dict, const WordsearchGrid &grid,
     assert(suffixes.size() == contains_further.size());
 
     static_vector<Index, 8> next_layer;
-    for (const auto i: ranges::views::ints(0UL, suffixes.size())) {
+    for (const auto i : ranges::views::ints(0UL, suffixes.size())) {
       const auto [contains, further] = contains_further[i];
-      LOG("For index in suffixes {}: {}/{}\n", i, suffixes[i], suffixes_string[i]);
+      LOG("For index in suffixes {}: {}/{}\n", i, suffixes[i],
+          suffixes_string[i]);
       LOG("contains, further {} {}\n", contains, further);
       if (contains) {
         // Note, potential optim here. If can lookup by temporarily adding to
@@ -205,10 +203,8 @@ void solve_index(const SolverDict &solver_dict, const WordsearchGrid &grid,
       tail.push_back(next_layer.front());
       tail_string.push_back(index_to_char(next_layer.front()));
       tail_matrix(next_layer.front()) = true;
-    }
-    else {
-      for (; !q.empty() && q.back().size() <= 1;)
-      {
+    } else {
+      for (; !q.empty() && q.back().size() <= 1;) {
         ////assert_invariants();
         LOG("Popping from back of q: {}\n", q.back());
         q.pop_back();
@@ -223,7 +219,7 @@ void solve_index(const SolverDict &solver_dict, const WordsearchGrid &grid,
         // Assertion is true else we'd have popped it in while loop above
         ////assert_invariants();
         LOG("Removing from front of back of q: {}\n", q.back().front());
-        //assert(q.back().size() >= 2);
+        // assert(q.back().size() >= 2);
 
         const auto index_to_remove = q.back()[0];
         const auto index_to_add = q.back()[1];
@@ -236,7 +232,6 @@ void solve_index(const SolverDict &solver_dict, const WordsearchGrid &grid,
 
         assert_invariants();
       }
-
     }
 
     // Loop termination condition
@@ -299,13 +294,13 @@ void solve_index(const SolverDict &solver_dict, const WordsearchGrid &grid,
 }
 
 template <class SolverDict>
-WordToListOfListsOfIndexes solve(const SolverDict &solver_dict,
-                                 const WordsearchGrid &grid) {
+WordToListOfListsOfIndexes solve(const SolverDict& solver_dict,
+                                 const WordsearchGrid& grid) {
   WordToListOfListsOfIndexes word_to_list_of_indexes;
 
   const auto rows = grid.rows_iter();
-  for (const auto& [i, row]: ranges::views::enumerate(rows)) {
-    for (const auto [j, elem]: ranges::views::enumerate(row)) {
+  for (const auto& [i, row] : ranges::views::enumerate(rows)) {
+    for (const auto [j, elem] : ranges::views::enumerate(row)) {
       // fmt::print("Processing: {}, {}\n", i, j);
       solve_index(solver_dict, grid, Index{i, j}, word_to_list_of_indexes);
     }
@@ -313,27 +308,27 @@ WordToListOfListsOfIndexes solve(const SolverDict &solver_dict,
   return word_to_list_of_indexes;
 }
 
-template <class Func> auto SolverDictWrapper::run(Func &&func) const {
+template <class Func> auto SolverDictWrapper::run(Func&& func) const {
   return std::visit(std::forward<Func>(func), t_);
 }
 
 template <class SolverDict, class Words>
-SolverDictWrapper::SolverDictWrapper(const SolverDict &solver_dict,
-                                     Words &&words)
+SolverDictWrapper::SolverDictWrapper(const SolverDict& solver_dict,
+                                     Words&& words)
     : t_(solver_dict, std::forward<Words>(words)) {}
 
 template <class OutputIndexIterator>
 void SolverDictWrapper::contains_further(
     const std::string_view stem, const std::string_view suffixes,
     OutputIndexIterator contains_further) const {
-  return this->run([=](const auto &t) {
+  return this->run([=](const auto& t) {
     return t.contains_further(stem, suffixes, contains_further);
   });
 }
 
 template <class Words>
 SolverDictWrapper SolverDictFactory::make(const std::string_view solver,
-                                          Words &&words) const {
+                                          Words&& words) const {
 #ifdef WORDSEARCH_SOLVER_HAS_trie
   if (solver == "trie") {
     return SolverDictWrapper{std::in_place_type<trie::Trie>,

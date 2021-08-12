@@ -15,13 +15,10 @@
 #include <utility>
 #include <vector>
 
-namespace compact_trie2
-{
+namespace compact_trie2 {
 
-class CompactTrie2
-{
-  public:
-
+class CompactTrie2 {
+public:
   CompactTrie2() = default;
 
   CompactTrie2(CompactTrie2&&) = default;
@@ -34,13 +31,12 @@ class CompactTrie2
   CompactTrie2(const std::initializer_list<std::string>& words);
   CompactTrie2(const std::initializer_list<const char*>& words);
 
-  template<class Iterator1, class Iterator2>
+  template <class Iterator1, class Iterator2>
   CompactTrie2(Iterator1 first, const Iterator2 last);
 
   // TODO: awful SFINAE or wait until 2030 for widespread cpp20 concepts to
   // constrain this to a ForwardRange
-  template<class ForwardRange>
-  explicit CompactTrie2(ForwardRange&& words);
+  template <class ForwardRange> explicit CompactTrie2(ForwardRange&& words);
 
   std::size_t size() const;
 
@@ -52,10 +48,10 @@ class CompactTrie2
 
   bool further(const std::string_view word) const;
 
-  template<class OutputIterator>
+  template <class OutputIterator>
   void contains_further(const std::string_view stem,
-      const std::string_view suffixes,
-      OutputIterator contains_further_it) const;
+                        const std::string_view suffixes,
+                        OutputIterator contains_further_it) const;
 
   // it -> data iterator
   // rows_it -> the row of that iterator (will be ++ to get the next row start)
@@ -63,23 +59,23 @@ class CompactTrie2
 
   friend std::ostream& operator<<(std::ostream& os, const CompactTrie2& ct);
 
-  private:
-
-  template<class T>
-  void init(T&& words_view);
+private:
+  template <class T> void init(T&& words_view);
 
   void non_templated_rest_of_init();
 
   std::tuple<std::size_t, DataIterator, RowIterator>
-  search(const std::string_view word, DataIterator it, RowIterator rows_it) const;
+  search(const std::string_view word, DataIterator it,
+         RowIterator rows_it) const;
 
   std::vector<std::uint8_t> data_;
   std::vector<std::size_t> rows_;
   std::size_t size_;
-  mutable utility::FlatCharValueMap<std::pair<DataIterator, RowIterator>> cache_;
+  mutable utility::FlatCharValueMap<std::pair<DataIterator, RowIterator>>
+      cache_;
 };
 
-}
+} // namespace compact_trie2
 
 #include "wordsearch_solver/compact_trie2/compact_trie2.tpp"
 

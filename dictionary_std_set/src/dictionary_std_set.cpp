@@ -11,52 +11,37 @@
 #include <cassert>
 #include <cstddef>
 #include <ostream>
+#include <set>
 #include <string>
 #include <string_view>
-#include <set>
 
-namespace dictionary_std_set
-{
+namespace dictionary_std_set {
 
 DictionaryStdSet::DictionaryStdSet(
     const std::initializer_list<std::string_view>& words)
-  : DictionaryStdSet(ranges::views::all(words))
-{}
+    : DictionaryStdSet(ranges::views::all(words)) {}
 
 DictionaryStdSet::DictionaryStdSet(
     const std::initializer_list<std::string>& words)
-  : DictionaryStdSet(ranges::views::all(words))
-  {}
+    : DictionaryStdSet(ranges::views::all(words)) {}
 
 DictionaryStdSet::DictionaryStdSet(
     const std::initializer_list<const char*>& words)
-  : DictionaryStdSet(ranges::views::all(words)
-      | ranges::views::transform(
-        [] (const auto string_literal)
-        {
-          return std::string_view{string_literal};
-        }
-        ))
-  {}
+    : DictionaryStdSet(ranges::views::all(words) |
+                       ranges::views::transform([](const auto string_literal) {
+                         return std::string_view{string_literal};
+                       })) {}
 
-std::size_t DictionaryStdSet::size() const
-{
-  return dict_.size();
-}
+std::size_t DictionaryStdSet::size() const { return dict_.size(); }
 
-bool DictionaryStdSet::empty() const
-{
-  return dict_.empty();
-}
+bool DictionaryStdSet::empty() const { return dict_.empty(); }
 
-bool DictionaryStdSet::contains(const std::string_view key) const
-{
+bool DictionaryStdSet::contains(const std::string_view key) const {
   return dict_.find(key) != dict_.end();
   // return std::binary_search(dict_.begin(), dict_.end(), key);
 }
 
-bool DictionaryStdSet::further(const std::string_view prefix) const
-{
+bool DictionaryStdSet::further(const std::string_view prefix) const {
   // const auto it = std::upper_bound(dict_.begin(), dict_.end(), prefix);
   const auto it = dict_.upper_bound(prefix);
   if (it == dict_.end()) {
@@ -66,14 +51,14 @@ bool DictionaryStdSet::further(const std::string_view prefix) const
   if (word.size() < prefix.size()) {
     return false;
   }
-  return std::equal(prefix.begin(), prefix.end(), word.begin(), word.begin()
-      + static_cast<decltype(prefix)::difference_type>(prefix.size()));
+  return std::equal(
+      prefix.begin(), prefix.end(), word.begin(),
+      word.begin() +
+          static_cast<decltype(prefix)::difference_type>(prefix.size()));
 }
 
-std::ostream& operator<<(std::ostream& os, const DictionaryStdSet& dsv)
-{
+std::ostream& operator<<(std::ostream& os, const DictionaryStdSet& dsv) {
   return os << fmt::format("{}", dsv.dict_);
 }
 
-}
-
+} // namespace dictionary_std_set

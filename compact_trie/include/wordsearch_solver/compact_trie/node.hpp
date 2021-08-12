@@ -9,12 +9,10 @@
 #include <cstddef>
 #include <ostream>
 
-namespace compact_trie
-{
+namespace compact_trie {
 
-class Node
-{
-  public:
+class Node {
+public:
   using PrecedingType = unsigned short int;
 
   Node() = default;
@@ -30,13 +28,12 @@ class Node
   PrecedingType preceding() const;
   friend std::ostream& operator<<(std::ostream& os, const Node& node);
 
-  private:
-
+private:
   std::bitset<26> bits_;
   PrecedingType preceding_;
   bool is_end_of_word_;
 };
 
-}
+} // namespace compact_trie
 
 #endif // NODE_HPP

@@ -15,50 +15,45 @@
 #include <type_traits>
 #include <vector>
 
-namespace trie
-{
+namespace trie {
 
-class Node
-{
-  private:
+class Node {
+private:
   // I dislike this. We store a char here but really we're storing a [0, 26)
   // index. But why store an 8 byte size_t or 4 byte int when a 1 byte char will
   // do (although due to alignment we save nothing really). Intent? Really need
   // strong typedefs or equivalent. So much boilerplate to make own simple Index
   // type though.
-  struct Edge
-  {
+  struct Edge {
     std::unique_ptr<Node> child;
     char c;
   };
 
-  public:
-
+public:
   // TODO: try changing this to boost/llvm small_vector and see what difference
   // using Edges = std::vector<Edge>;
-    using Edges = boost::container::small_vector<Edge, 4>;
-    // using Edges = llvm::SmallVector<Edge, 4>;
-    using EdgesIterator = Edges::const_iterator;
+  using Edges = boost::container::small_vector<Edge, 4>;
+  // using Edges = llvm::SmallVector<Edge, 4>;
+  using EdgesIterator = Edges::const_iterator;
 
-    Node() = default;
-    Node(bool is_end_of_word);
+  Node() = default;
+  Node(bool is_end_of_word);
 
-    Node *add_char(char c);
-    // void set_preceding(std::size_t preceding);
-    void set_is_end_of_word(bool is_end_of_word);
+  Node* add_char(char c);
+  // void set_preceding(std::size_t preceding);
+  void set_is_end_of_word(bool is_end_of_word);
 
-    const Node *test(const char c) const;
-    bool any() const;
-    bool is_end_of_word() const;
-    // PrecedingType preceding() const;
-    friend std::ostream &operator<<(std::ostream &os, const Node &node);
+  const Node* test(const char c) const;
+  bool any() const;
+  bool is_end_of_word() const;
+  // PrecedingType preceding() const;
+  friend std::ostream& operator<<(std::ostream& os, const Node& node);
 
-    // This is here so the owning trie can print nodes and get their children.
-    // Not delighted about it.
-    const Edges &edges() const;
+  // This is here so the owning trie can print nodes and get their children.
+  // Not delighted about it.
+  const Edges& edges() const;
 
-  private:
-
+private:
   Edges edges_;
   bool is_end_of_word_;
 };
@@ -74,6 +69,6 @@ class Node
 
 const Node* search(const Node& node, std::string_view word);
 
-}
+} // namespace trie
 
 #endif // TRIE_NODE_HPP

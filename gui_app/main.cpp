@@ -45,13 +45,13 @@
 #include <utility>
 #include <vector>
 
-static void glfw_error_callback(int error, const char *description) {
+static void glfw_error_callback(int error, const char* description) {
   fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
 template <class T, class E>
-std::optional<typename T::size_type> find_index(const T &container,
-                                                const E &elem) {
+std::optional<typename T::size_type> find_index(const T& container,
+                                                const E& elem) {
   const auto it = std::find(container.begin(), container.end(), elem);
   if (it == container.end()) {
     return {};
@@ -70,13 +70,13 @@ public:
   UserWordsRegex() = default;
 
   // To be used with ImGui::InputText to write data into
-  std::string *get_string_addr() { return &user_words_regex_string_; }
+  std::string* get_string_addr() { return &user_words_regex_string_; }
 
-  const std::string &get_string() const { return user_words_regex_string_; }
+  const std::string& get_string() const { return user_words_regex_string_; }
 
   void reset() { *this->get_string_addr() = ""; }
 
-  const std::optional<std::regex> &get() {
+  const std::optional<std::regex>& get() {
     if (user_words_regex_string_ != last_reg_) {
       last_reg_ = user_words_regex_string_;
       changed_ = true;
@@ -84,7 +84,7 @@ public:
         // fmt::print("Recompiled reg\n");
         user_words_regex_.emplace(user_words_regex_string_,
                                   std::regex::optimize);
-      } catch (const std::regex_error &) {
+      } catch (const std::regex_error&) {
         // fmt::print("Failed recompile reg\n");
         user_words_regex_ = {};
       }
@@ -147,18 +147,18 @@ public:
     return false;
   }
 
-  std::function<bool(const std::string &, const std::string &)>
+  std::function<bool(const std::string&, const std::string&)>
   get_comparator() const {
     if (by_size_) {
       if (!reversed_) {
-        return [](const auto &word0, const auto &word1) {
+        return [](const auto& word0, const auto& word1) {
           // Reverse sort so longest first,
           // sort secondarily lexicographically so sort is stable
           return std::forward_as_tuple(word1.size(), word0) <
                  std::forward_as_tuple(word0.size(), word1);
         };
       } else {
-        return [](const auto &word0, const auto &word1) {
+        return [](const auto& word0, const auto& word1) {
           return std::forward_as_tuple(word0.size(), word0) <
                  std::forward_as_tuple(word1.size(), word1);
         };
@@ -187,13 +187,13 @@ private:
   std::vector<IndexPosition> index_positions_in_word_;
 
 public:
-  SelectedWord(const std::string &word, const solver::Tail &indexes,
-               const std::vector<IndexPosition> &index_positions_in_word)
+  SelectedWord(const std::string& word, const solver::Tail& indexes,
+               const std::vector<IndexPosition>& index_positions_in_word)
       : word_(word), indexes_(indexes),
         index_positions_in_word_(index_positions_in_word) {}
 
-  const std::string &word() const { return word_; }
-  const solver::Tail &indexes() const { return indexes_; }
+  const std::string& word() const { return word_; }
+  const solver::Tail& indexes() const { return indexes_; }
   using PositionsIt = std::vector<IndexPosition>::const_iterator;
 
   std::pair<PositionsIt, PositionsIt> index_positions_in_word() const {
@@ -217,18 +217,18 @@ public:
   UserWordsRegex user_words_regex = {};
   SortState sort_state = {};
 
-  const solver::WordsearchGrid &wordsearch_grid() const {
+  const solver::WordsearchGrid& wordsearch_grid() const {
     return wordsearch_grid_;
   }
 
-  solver::WordsearchGrid &wordsearch_grid() { return wordsearch_grid_; }
+  solver::WordsearchGrid& wordsearch_grid() { return wordsearch_grid_; }
 
-  CellData &cell_at(const solver::Index &index) {
+  CellData& cell_at(const solver::Index& index) {
     return cell_data[index.y * wordsearch_grid_.columns() + index.x];
   }
 
   void unset_all_indexes_selected() {
-    for (auto &p : cell_data) {
+    for (auto& p : cell_data) {
       p = {};
     }
   }
@@ -245,14 +245,14 @@ public:
   void reset_selected_word() { selected_word_.reset(); }
   bool selected_word_has_value() const { return selected_word_.has_value(); }
 
-  void set_selected_word(const std::string &word) {
-    const auto &lists_of_indexes = results_.at(word);
+  void set_selected_word(const std::string& word) {
+    const auto& lists_of_indexes = results_.at(word);
     const auto index_selected = word_indexes_selected_.at(word);
-    const auto &indexes = lists_of_indexes[index_selected];
+    const auto& indexes = lists_of_indexes[index_selected];
 
     std::vector<SelectedWord::IndexPosition> index_positions_in_word;
     index_positions_in_word.reserve(word.size());
-    for (const auto &index : indexes) {
+    for (const auto& index : indexes) {
       const auto position_in_word = find_index(indexes, index);
       assert(position_in_word);
       // // Not sure why emplace_back doesn't work here
@@ -262,7 +262,7 @@ public:
     }
     std::sort(
         index_positions_in_word.begin(), index_positions_in_word.end(),
-        [](const auto &v0, const auto &v1) { return v0.index < v1.index; });
+        [](const auto& v0, const auto& v1) { return v0.index < v1.index; });
 
     selected_word_.emplace(word, indexes, std::move(index_positions_in_word));
   }
@@ -289,7 +289,7 @@ public:
     this->set_selected_word(word);
   }
 
-  const std::string &get_selected_word() const {
+  const std::string& get_selected_word() const {
     return selected_word_.value().word();
   }
 
@@ -299,7 +299,7 @@ public:
                           : std::nullopt;
   }
 
-  McData(const Words &dict, const solver::WordsearchGrid &grid)
+  McData(const Words& dict, const solver::WordsearchGrid& grid)
       : dictionary_(dict), wordsearch_grid_(grid), trie_(dict),
         results_(solver::solve(trie_, grid)) {
 
@@ -309,7 +309,7 @@ public:
       }
     }
 
-    for (const auto &[word, _] : results_) {
+    for (const auto& [word, _] : results_) {
       result_words.emplace_back(word);
       word_indexes_selected_[word] = 0;
     }
@@ -318,7 +318,7 @@ public:
   }
 };
 
-int main(int, char **) {
+int main(int, char**) {
 
   auto data = McData{
       utility::read_file_as_lines("dictionary.txt"),
@@ -331,14 +331,14 @@ int main(int, char **) {
     return 1;
 
   // Decide GL+GLSL versions
-  const char *glsl_version = "#version 400";
+  const char* glsl_version = "#version 400";
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
   // glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+
   // only glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // 3.0+
 
   // Create window with graphics context
-  GLFWwindow *window = glfwCreateWindow(
+  GLFWwindow* window = glfwCreateWindow(
       1280, 720, "Dear ImGui GLFW+OpenGL3 example", NULL, NULL);
   if (window == NULL)
     return 1;
@@ -354,7 +354,7 @@ int main(int, char **) {
   // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
-  ImGuiIO &io = ImGui::GetIO();
+  ImGuiIO& io = ImGui::GetIO();
   (void)io;
   // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable
   // Keyboard Controls io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; //
@@ -461,7 +461,7 @@ int main(int, char **) {
               std::optional<std::size_t> position_in_word = {};
 
               if (index_positions_in_word) {
-                auto &[first, last] = *index_positions_in_word;
+                auto& [first, last] = *index_positions_in_word;
                 // assert(first != last);
                 // Keep first pointing at the next index position pair
                 // If the current index equals this index, then we're at this
@@ -495,7 +495,7 @@ int main(int, char **) {
                                       (ImVec4)ImColor::HSV(0.1f, 0.9f, v));
               }
 
-              auto &cell = data.cell_at(index);
+              auto& cell = data.cell_at(index);
               cell.word_selected = position_in_word.has_value();
 
               const bool selected = cell.is_selected();
@@ -517,7 +517,7 @@ int main(int, char **) {
 
       // Process any selection/deselection events
       // NOTE: for now do nothing with these
-      for (auto &cell : data.cell_data) {
+      for (auto& cell : data.cell_data) {
         if (cell.selected_event) {
           if (!cell.is_selected()) {
             // fmt::print("Selected {}\n", index);
@@ -569,7 +569,7 @@ int main(int, char **) {
 
         // Here we store our selection data as an index.
         const auto regex_empty = data.user_words_regex.get_string().empty();
-        const auto &re = data.user_words_regex.get();
+        const auto& re = data.user_words_regex.get();
 
         bool filter_dirty = false;
         if (data.sort_state.if_dirty_reset()) {
@@ -587,7 +587,7 @@ int main(int, char **) {
             data.result_words_filtered.clear();
             std::copy_if(data.result_words.begin(), data.result_words.end(),
                          std::back_inserter(data.result_words_filtered),
-                         [&re](const auto &word) {
+                         [&re](const auto& word) {
                            return std::regex_search(word, *re);
                          });
           }
@@ -636,7 +636,7 @@ int main(int, char **) {
           clipper.Begin(static_cast<int>(data.result_words_filtered.size()));
           while (clipper.Step()) {
             for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++) {
-              const auto &s =
+              const auto& s =
                   data.result_words_filtered[static_cast<std::size_t>(i)];
               const bool selected = data.selected_word_has_value() &&
                                     s == data.get_selected_word();

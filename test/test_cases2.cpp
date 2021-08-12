@@ -21,13 +21,14 @@
 
 // TODO:
 // Currently test fails because of unsorted thing.
-// Could try to create some kind of CRTP wrapper that classes implement/inherit from to implement the contains/further stuff.
-// So they all get the constructor wrappers for free.
-// Also find cmake way to run tests for one.
-// Find cmake restructure to have all targets in top level cmakelists and pass that to solver with variable (easy)
-// Fork prettyprint.hpp repo and add nice stuff for optional configure, and cmake support
-// Nicer way to pass all classes to run through from build to program would be awesome really.
-// Need to copy SFINAE for string_view -> string construction from set to vector
+// Could try to create some kind of CRTP wrapper that classes implement/inherit
+// from to implement the contains/further stuff. So they all get the constructor
+// wrappers for free. Also find cmake way to run tests for one. Find cmake
+// restructure to have all targets in top level cmakelists and pass that to
+// solver with variable (easy) Fork prettyprint.hpp repo and add nice stuff for
+// optional configure, and cmake support Nicer way to pass all classes to run
+// through from build to program would be awesome really. Need to copy SFINAE
+// for string_view -> string construction from set to vector
 
 // To make adding a dictionary implementation less painful, add it to this
 // "list", delimited by a comma
@@ -41,15 +42,11 @@ using namespace std::literals;
 namespace fs = std::filesystem;
 using ContainsFurther = std::pair<bool, bool>;
 
-template<class Dict>
-std::vector<std::pair<bool, bool>>
-static make_contains_and_further(const Dict& t,
-    const std::string& stem,
-    const std::string& suffixes)
-{
+template <class Dict>
+std::vector<std::pair<bool, bool>> static make_contains_and_further(
+    const Dict& t, const std::string& stem, const std::string& suffixes) {
   std::vector<std::pair<bool, bool>> contains_further;
-  t.contains_further(stem, suffixes,
-      std::back_inserter(contains_further));
+  t.contains_further(stem, suffixes, std::back_inserter(contains_further));
   return contains_further;
 }
 
@@ -88,11 +85,7 @@ TEMPLATE_TEST_CASE("Test trie constructors", "[construct]",
   TestType{"a"sv, "b"sv, "a"sv};
 
   const TestType t{
-    "a",
-    "act",
-    "acted",
-    "actor",
-    "actors",
+      "a", "act", "acted", "actor", "actors",
   };
 }
 
@@ -118,11 +111,9 @@ TEMPLATE_TEST_CASE("Simple contains", "[contains]",
   CHECK(!t.contains("laplandab"));
   const auto word = "lapland"s;
   const bool found = t.contains(word);
-  if (found)
-  {
+  if (found) {
     INFO(fmt::format("Found {}\n", word));
-  } else
-  {
+  } else {
     INFO(fmt::format("Not found {}\n", word));
   }
 
@@ -131,6 +122,7 @@ TEMPLATE_TEST_CASE("Simple contains", "[contains]",
 
 TEMPLATE_TEST_CASE("Contains and further test", "[contains][further]",
                    WORDSEARCH_DICTIONARY_CLASSES) {
+  // clang-format off
   const std::initializer_list<std::string> inserts{
     "act",
     "acted",
@@ -140,33 +132,35 @@ TEMPLATE_TEST_CASE("Contains and further test", "[contains][further]",
     "actor",
     "activate",
   };
+  // clang-format on
   TestType t{inserts};
   CHECK(t.size() == inserts.size());
 
   // INFO(fmt::format("Traversing\n"));
   // std::vector<std::string> traverse_words;
   // t.traverse([&traverse_words] (const auto& word)
-      // {
-        // INFO(fmt::format("{}\n", word));
-        // traverse_words.push_back(word);
-      // });
+  // {
+  // INFO(fmt::format("{}\n", word));
+  // traverse_words.push_back(word);
+  // });
   // CHECK(std::is_sorted(traverse_words.begin(), traverse_words.end()));
   // CHECK(std::is_permutation(
-        // traverse_words.begin(), traverse_words.end(),
-        // inserts.begin(), inserts.end()
-        // ));
+  // traverse_words.begin(), traverse_words.end(),
+  // inserts.begin(), inserts.end()
+  // ));
 
   const std::string haystack = "activates";
   std::string w;
-  for (const auto c: haystack)
-  {
+  for (const auto c : haystack) {
     w.push_back(c);
     bool has = t.contains(w);
     INFO(fmt::format("{}\n", t));
     bool has_prefix = t.further(w);
     INFO(fmt::format("Word: {:{}}, trie has {}: has prefix:{}\n", w,
-        haystack.size(), has ? u8"✓ " : u8"❌", has_prefix ? u8"✓ " : u8"❌"));
+                     haystack.size(), has ? u8"✓ " : u8"❌",
+                     has_prefix ? u8"✓ " : u8"❌"));
   }
+  // clang-format off
   const std::vector<std::tuple<std::string, bool, bool>> v{
     { "a",         false, true, },
     { "ac",        false, true, },
@@ -178,21 +172,24 @@ TEMPLATE_TEST_CASE("Contains and further test", "[contains][further]",
     { "activate",  true,  false, },
     { "activates", false, false, },
   };
+  // clang-format on
   INFO(fmt::format("Trie: {}\n", t));
-  for (const auto& [substring, contains_answer, contains_prefix_answer]: v)
-  {
-    INFO(fmt::format("Izzard: {} {} {}\n", substring, contains_answer, contains_prefix_answer));
+  for (const auto& [substring, contains_answer, contains_prefix_answer] : v) {
+    INFO(fmt::format("Izzard: {} {} {}\n", substring, contains_answer,
+                     contains_prefix_answer));
     INFO(fmt::format("Contains:\n"));
     CHECK(t.contains(substring) == contains_answer);
     INFO(fmt::format("Further:\n"));
     CHECK(t.further(substring) == contains_prefix_answer);
-        // ,"substring: {}, expected: {} {}", substring, contains_answer,
-        // contains_prefix_answer);
+    // ,"substring: {}, expected: {} {}", substring, contains_answer,
+    // contains_prefix_answer);
   }
 }
 
 TEMPLATE_TEST_CASE("Contains and further test 2", "[contains][further]",
                    WORDSEARCH_DICTIONARY_CLASSES) {
+
+  // clang-format off
   const std::vector<std::string> bla{
     "burner",
     "zoo",
@@ -209,6 +206,7 @@ TEMPLATE_TEST_CASE("Contains and further test 2", "[contains][further]",
     "burner",
     "burner",
   };
+  // clang-format on
   const TestType t{bla};
   // INFO(fmt::format("{}\n", t.as_vector()));
 
@@ -219,8 +217,7 @@ TEMPLATE_TEST_CASE("Contains and further test 2", "[contains][further]",
   CHECK(t.size() == bla2.size());
   // , "{} vs {}", t.size(), bla2.size());
   // CHECK(t.as_vector() == bla2);
-  for (const auto& word: bla)
-  {
+  for (const auto& word : bla) {
     CHECK(t.contains(word));
     INFO(fmt::format("{} should be in {}\n", word, t));
   }
@@ -240,6 +237,7 @@ TEMPLATE_TEST_CASE("Simple further", "[further]",
 TEMPLATE_TEST_CASE("More complex contains further",
                    "[contains][further][contains_further]",
                    WORDSEARCH_DICTIONARY_CLASSES) {
+  // clang-format off
   const std::vector<std::string> bla{
     "burner",
     "zoo",
@@ -258,6 +256,7 @@ TEMPLATE_TEST_CASE("More complex contains further",
     "burner",
     "bur",
   };
+  // clang-format on
   const TestType t{bla};
 
   auto bla2 = bla;
@@ -265,8 +264,7 @@ TEMPLATE_TEST_CASE("More complex contains further",
   bla2.erase(std::unique(bla2.begin(), bla2.end()), bla2.end());
   INFO(fmt::format("{}\n", bla2));
   CHECK(t.size() == bla2.size());
-  for (const auto& word: bla)
-  {
+  for (const auto& word : bla) {
     CHECK(t.contains(word));
     INFO(fmt::format("{} should be in {}\n", word, t));
   }
@@ -276,8 +274,7 @@ TEMPLATE_TEST_CASE("More complex contains further",
   CHECK(!t.contains("ba"));
   CHECK(!t.contains("zooz"));
   CHECK(!t.contains("x"));
-  for (const auto c: "abcdefghijklmnopqrstuvwxyz"sv)
-  {
+  for (const auto c : "abcdefghijklmnopqrstuvwxyz"sv) {
     INFO(fmt::format("{}\n", t));
     CHECK(!t.contains(std::string{"ahem"} + c));
   }
@@ -301,12 +298,14 @@ TEMPLATE_TEST_CASE("More complex contains further",
 TEMPLATE_TEST_CASE("Contains_further test", "[contains_further]",
                    WORDSEARCH_DICTIONARY_CLASSES) {
   INFO(fmt::format("----------------\n"));
+  // clang-format off
   const std::vector<std::string> bla{
     "ahem",
     "ahe",
     "aheaaa",
     "ahem",
   };
+  // clang-format on
   INFO(fmt::format("Inserting {}\n", bla));
   const TestType t{bla};
   INFO(fmt::format("Trie: {}\n", t));
@@ -343,6 +342,7 @@ TEMPLATE_TEST_CASE("Test move cons", "[construct][further]",
 TEMPLATE_TEST_CASE("Contains and further test 3", "[contains][further]",
                    WORDSEARCH_DICTIONARY_CLASSES) {
   INFO(fmt::format("Start of wadoogey\n"));
+  // clang-format off
   std::vector<std::string> w =
   {
     "a"        ,
@@ -355,14 +355,13 @@ TEMPLATE_TEST_CASE("Contains and further test 3", "[contains][further]",
     "activate" ,
     "activates",
   };
+  // clang-format on
   TestType t{w};
-  for (auto word: w)
-  {
+  for (auto word : w) {
     CHECK(t.contains(word));
   }
   CHECK(!w.empty());
-  for (auto i = 0UL; i + 1 < w.size(); ++i)
-  {
+  for (auto i = 0UL; i + 1 < w.size(); ++i) {
     CHECK(t.further(w.at(i)));
   }
   CHECK(!t.further(w.back()));
@@ -426,8 +425,8 @@ TEMPLATE_TEST_CASE("Empty dict/trie tests", "[contains][further][construct]",
 
 TEMPLATE_TEST_CASE("Further tests", "[further]",
                    WORDSEARCH_DICTIONARY_CLASSES) {
-  const TestType t{"aaa", "aab", "aabx", "aaby", "aabz", "aabxa", "aabxb",
-    "aabyc", "aabyd", "aac"};
+  const TestType t{"aaa",   "aab",   "aabx",  "aaby",  "aabz",
+                   "aabxa", "aabxb", "aabyc", "aabyd", "aac"};
   INFO(fmt::format("Trie: {}\n", t));
   CHECK(!t.further("aaa"));
   CHECK(!t.further("aac"));

@@ -12,21 +12,18 @@
 #include <type_traits>
 #include <utility>
 
-namespace dictionary_std_set
-{
+namespace dictionary_std_set {
 
-template<class ForwardRange>
+template <class ForwardRange>
 DictionaryStdSet::DictionaryStdSet(ForwardRange&& words)
-: DictionaryStdSet(words.begin(), words.end())
-{}
+    : DictionaryStdSet(words.begin(), words.end()) {}
 
-template<class OutputIndexIterator>
+template <class OutputIndexIterator>
 void DictionaryStdSet::contains_further(const std::string_view stem,
-    const std::string_view suffixes, OutputIndexIterator it) const
-{
+                                        const std::string_view suffixes,
+                                        OutputIndexIterator it) const {
   // fmt::print("Dict: {}\n", dict_);
-  for (const auto suffix: suffixes)
-  {
+  for (const auto suffix : suffixes) {
     const std::string word = std::string{stem} + suffix;
     // fmt::print("\ncontains/further for: {}\n", word);
     const bool c = contains(word);
@@ -37,33 +34,29 @@ void DictionaryStdSet::contains_further(const std::string_view stem,
 }
 
 // Actual cons that does the work
-template<class Iterator1, class Iterator2,
-  std::enable_if_t<
-    std::is_same_v<typename std::iterator_traits<Iterator1>::value_type, std::string_view>,
-    int
-  >
-  >
+template <
+    class Iterator1, class Iterator2,
+    std::enable_if_t<
+        std::is_same_v<typename std::iterator_traits<Iterator1>::value_type,
+                       std::string_view>,
+        int>>
 DictionaryStdSet::DictionaryStdSet(Iterator1 first, const Iterator2 last)
-: dict_()
-{
-  for (; first != last; ++first)
-  {
+    : dict_() {
+  for (; first != last; ++first) {
     dict_.insert(std::string{*first});
   }
 }
 
 // Actual cons that does the work
-template<class Iterator1, class Iterator2,
-  std::enable_if_t<
-    !std::is_same_v<typename std::iterator_traits<Iterator1>::value_type, std::string_view>,
-    int
-  >
-  >
+template <
+    class Iterator1, class Iterator2,
+    std::enable_if_t<
+        !std::is_same_v<typename std::iterator_traits<Iterator1>::value_type,
+                        std::string_view>,
+        int>>
 DictionaryStdSet::DictionaryStdSet(Iterator1 first, const Iterator2 last)
-: dict_(first, last)
-{}
+    : dict_(first, last) {}
 
-
-}
+} // namespace dictionary_std_set
 
 #endif // DICTIONARY_STD_SET_TPP

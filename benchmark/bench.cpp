@@ -32,15 +32,15 @@ const std::size_t numb_threads =
     std::max(2U, std::thread::hardware_concurrency()) - 1U;
 
 template <class Dict, class Grid>
-void bench_long_words(benchmark::State &state, const Dict &dict,
-                      const Grid &grid) {
+void bench_long_words(benchmark::State& state, const Dict& dict,
+                      const Grid& grid) {
   for (auto _ : state) {
     benchmark::DoNotOptimize(solver::solve(dict, grid));
     benchmark::ClobberMemory();
   }
 }
 
-void bench_solver_init(benchmark::State &state,
+void bench_solver_init(benchmark::State& state,
                        const std::string_view dict_solver) {
   solver::SolverDictFactory solvers{};
   for (auto _ : state) {

@@ -5,8 +5,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace compact_trie2
-{
+namespace compact_trie2 {
 
 using DataContainer = std::vector<std::uint8_t>;
 using DataIterator = DataContainer::const_iterator;
@@ -15,6 +14,6 @@ using RowContainer = std::vector<std::size_t>;
 using RowIterator = RowContainer::const_iterator;
 using RowIteratorMut = RowContainer::iterator;
 
-}
+} // namespace compact_trie2
 
 #endif

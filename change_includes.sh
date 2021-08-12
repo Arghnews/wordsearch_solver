@@ -5,13 +5,23 @@ set -u -o pipefail
 # Go through all source files and convert includes of the form
 # #include "trie/node.hpp" -> #include "wordsearch_solver/trie/node.hpp"
 
-for f in $(find . -type f \( -name "*.cpp" -o -name "*.hpp" -o -name "*.tpp" -o -name "CMakeLists.txt" -o -name "*.py" -o -name "*.sh" \))
+# for f in $(find . -type f \( -name "*.cpp" -o -name "*.hpp" -o -name "*.tpp" -o -name "CMakeLists.txt" -o -name "*.py" -o -name "*.sh" \))
+for f in $(find . -type f \( -name "*.cpp" -o -name "*.hpp" -o -name "*.tpp" \))
 do
     if [[ "$f" == "$0" ]]; then
         continue
     fi
+    if [[ "$f" == *build/* ]]; then
+        continue
+    fi
 
-    # echo "$f"
+    echo "$f"
+
+    # Clang format everything
+    # set -x
+    # clang-format -i --style=file "$f"
+    # set +x
+
     # Change cmake minimum version
     # # sed -i -E "s/^cmake_minimum_required\(VERSION (.*)\)$/cmake_minimum_required(VERSION 3.19)/" "$f"
 

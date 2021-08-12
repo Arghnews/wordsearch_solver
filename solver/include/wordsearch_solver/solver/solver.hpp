@@ -15,8 +15,7 @@
 #include <variant>
 #include <vector>
 
-namespace solver
-{
+namespace solver {
 
 using Index = matrix2d::Index;
 using Tail = std::vector<Index>;
@@ -30,28 +29,28 @@ using WordToListOfListsOfIndexes =
 using WordsearchGrid = matrix2d::Matrix2d<char>;
 
 template <class SolverDict>
-void solve_index(const SolverDict &solver_dict, const WordsearchGrid &grid,
+void solve_index(const SolverDict& solver_dict, const WordsearchGrid& grid,
                  const Index start_index,
-                 WordToListOfListsOfIndexes &word_to_list_of_indexes);
+                 WordToListOfListsOfIndexes& word_to_list_of_indexes);
 
 template <class SolverDict>
-WordToListOfListsOfIndexes solve(const SolverDict &solver_dict,
-                                 const WordsearchGrid &grid);
+WordToListOfListsOfIndexes solve(const SolverDict& solver_dict,
+                                 const WordsearchGrid& grid);
 
-WordsearchGrid make_grid(const std::vector<std::string> &lines);
+WordsearchGrid make_grid(const std::vector<std::string>& lines);
 
 class SolverDictWrapper {
   std::variant<WORDSEARCH_DICTIONARY_CLASSES> t_;
   static_assert(std::is_move_constructible_v<decltype(t_)>);
 
-  template <class Func> auto run(Func &&func) const;
+  template <class Func> auto run(Func&& func) const;
 
 public:
   template <class SolverDict, class Words>
-  SolverDictWrapper(const SolverDict &solver_dict, Words &&words);
+  SolverDictWrapper(const SolverDict& solver_dict, Words&& words);
 
-  SolverDictWrapper(SolverDictWrapper &&) = default;
-  SolverDictWrapper &operator=(SolverDictWrapper &&) = default;
+  SolverDictWrapper(SolverDictWrapper&&) = default;
+  SolverDictWrapper& operator=(SolverDictWrapper&&) = default;
 
   std::size_t size() const;
 
@@ -86,7 +85,7 @@ public:
   auto solver_names() const -> decltype(ranges::views::all(solvers));
 
   template <class Words>
-  SolverDictWrapper make(const std::string_view solver, Words &&words) const;
+  SolverDictWrapper make(const std::string_view solver, Words&& words) const;
 };
 
 } // namespace solver

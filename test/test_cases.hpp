@@ -45,7 +45,7 @@ inline void check_inputs() {
   // replace the filesystem calls in here with ones from
   // https://emscripten.org/docs/api_reference/Filesystem-API.html
 
-  for (const auto &test_dir : fs::directory_iterator(test_cases_dir)) {
+  for (const auto& test_dir : fs::directory_iterator(test_cases_dir)) {
     if (!fs::is_directory(test_dir)) {
       std::cout << "Skipperino " << test_dir.path().string() << "\n";
       continue;
@@ -55,7 +55,7 @@ inline void check_inputs() {
     // REQUIRE(fs::is_regular_file(test_dir / answers_filename));
     const auto answers =
         sort_unique(utility::read_file_as_lines(test_dir / answers_filename));
-    for (const auto &answer : answers) {
+    for (const auto& answer : answers) {
       // Waiting for utf8 heaven one day... UD on non-ascii
       INFO(fmt::format("Answer word has non lowercase: {}", answer));
       REQUIRE(
