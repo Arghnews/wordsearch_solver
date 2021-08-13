@@ -7,7 +7,7 @@ from distutils import dir_util
 
 class WordsearchsolverConan(ConanFile):
     name = "wordsearch_solver"
-    version = "0.1.7"
+    version = "0.1.8"
     license = "MIT"
     author = "Justin Riddell arghnews@hotmail.co.uk"
     url = "https://github.com/Arghnews/wordsearch_solver"
@@ -55,13 +55,22 @@ class WordsearchsolverConan(ConanFile):
             "dictionary_std_set", "dictionary_std_vector",
             ]
 
-    def source(self):
-        git = tools.Git(folder="source_subfolder")
-        git.clone("https://github.com/Arghnews/wordsearch_solver", shallow=True)
-        #  dir_util.copy_tree("/home/justin/cpp/ws3", "source_subfolder")
+    def export_sources(self):
+        self.copy("*", src=".", dst="source_subfolder")
+        pass
+
+    #  def source(self):
+        #  git = tools.Git(folder="source_subfolder")
+        #  git.clone("https://github.com/Arghnews/wordsearch_solver", shallow=True)
+        #  #  dir_util.copy_tree("/home/justin/cpp/ws3", "source_subfolder")
 
     def build(self):
         cmake = CMake(self)
+        version_cmake = pull_version_number("source_subfolder/version.cmake",
+                self.name)
+        self_version = self.version
+        assert version_cmake == self_version, \
+                f"version.cmake {version_cmake} != self.version {self_version}"
 
         assert all(d in self.options for d in self._dict_impls)
         cmake.definitions["WORDSEARCH_SOLVERS"] = ";".join(dict_impl
@@ -75,8 +84,6 @@ class WordsearchsolverConan(ConanFile):
         cmake = CMake(self)
         # Check version numbers in version.cmake and self match
         # Not sure in which conan method this check should really be
-        assert (pull_version_number("source_subfolder/version.cmake",
-            self.name) == self.version)
         cmake.install()
 
     def package_info(self):
