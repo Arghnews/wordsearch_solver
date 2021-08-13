@@ -12,12 +12,12 @@ set(INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
 set(INSTALL_INCLUDE_DIR "include")
 # set(SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
-set(HEADERS "utility.hpp" "flat_char_value_map.hpp")
+set(HEADERS "utility.hpp" "utility.tpp" "flat_char_value_map.hpp")
 
 list(TRANSFORM HEADERS PREPEND "${INCLUDE_DIR}/wordsearch_solver/${PROJECT_NAME}/")
 # list(TRANSFORM SOURCES PREPEND "${SOURCE_DIR}/")
 
-add_library(${PROJECT_NAME} INTERFACE)
+add_library(${PROJECT_NAME} INTERFACE ${HEADERS})
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
