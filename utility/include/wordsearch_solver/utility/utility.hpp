@@ -41,15 +41,15 @@ namespace utility {
 // Word: "woody", suffixes: [], end_of_word: true
 template <class Rng> auto words_grouped_by_prefix_suffix(const Rng& words);
 
-inline std::vector<std::string> read_file_as_lines(const char* filepath);
-inline std::vector<std::string> read_file_as_lines(const std::string& filepath);
+std::vector<std::string> read_file_as_lines(const char* filepath);
+std::vector<std::string> read_file_as_lines(const std::string& filepath);
 
-inline std::string read_file_as_string(const char* filepath);
-inline std::string read_file_as_string(const std::string& filepath);
+std::string read_file_as_string(const char* filepath);
+std::string read_file_as_string(const std::string& filepath);
 
-inline std::vector<std::string>
+std::vector<std::string>
 read_file_as_lines_keep_lowercase_ascii_only(const char* filepath);
-inline std::vector<std::string>
+std::vector<std::string>
 read_file_as_lines_keep_lowercase_ascii_only(const std::string& filepath);
 
 template <class String> void throw_if_not_lowercase_ascii(const String& word);

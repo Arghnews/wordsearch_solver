@@ -14,6 +14,16 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# We need to pass -stdc++fs as a link flag here. We could do this in conan
+# in package_info with self.cpp_info.libs += ["-lstdc++fs"]
+# However that means that consumers of this from cmake won't get the flag
+# so we set it here instead. This assumes libstdc++.
+# Problem with putting this in target_link_libraries:
+# $<IF:$<AND:$<CXX_COMPILER_ID:Clang>,$<PLATFORM_ID:Linux>>,"stdc++fs","">
+# If you're the IF is false, cmake then helpfully appends -l"" to your link options
+    # $<:$<AND:$<CXX_COMPILER_ID:Clang>,$<PLATFORM_ID:Linux>>,"stdc++fs">
+    # $<IF:$<AND:$<CXX_COMPILER_ID:Clang>,$<PLATFORM_ID:Linux>>,"stdc++fs","">
+# Too fiddly, moved into "library" here
 add_library(link_std_filesystem INTERFACE IMPORTED)
 add_library(link_std_filesystem::link_std_filesystem ALIAS link_std_filesystem)
 target_link_libraries(link_std_filesystem INTERFACE
@@ -218,12 +228,6 @@ add_subdirectory(benchmark)
 
 add_subdirectory(cmdline_app)
 
-
-# Currently cmake for the example is putting -lcompact_trie -lcompact_trie2 -ltrie -lsolver, then undefined refs for the compact ones with lto.
-# lto with gcc8 just seems broken. Move solver to front, or use lld for fix.
-
-# Thoughts: either give up on gcc
-# Or just use gcc with lld + ffatlto
 
 # Master/public library
 add_library(${PROJECT_NAME} INTERFACE)

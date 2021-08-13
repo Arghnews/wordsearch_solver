@@ -10,14 +10,15 @@ find_package(fmt REQUIRED)
 
 set(INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
 set(INSTALL_INCLUDE_DIR "include")
-# set(SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
+set(SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 set(HEADERS "utility.hpp" "utility.tpp" "flat_char_value_map.hpp")
+set(SOURCES "utility.cpp")
 
 list(TRANSFORM HEADERS PREPEND "${INCLUDE_DIR}/wordsearch_solver/${PROJECT_NAME}/")
-# list(TRANSFORM SOURCES PREPEND "${SOURCE_DIR}/")
+list(TRANSFORM SOURCES PREPEND "${SRC_DIR}/")
 
-add_library(${PROJECT_NAME} INTERFACE ${HEADERS})
+add_library(${PROJECT_NAME} ${HEADERS} ${SOURCES})
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -25,28 +26,12 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD_REQUIRED ON
     CXX_EXTENSIONS OFF)
 
-# set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
-
-# I'm a retard this doesn't work in build, even if the generator crap lets it work for the installed...
-
-target_include_directories(${PROJECT_NAME} INTERFACE
+target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${INCLUDE_DIR}>
     $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}>
     )
 
-# We need to pass -stdc++fs as a link flag here. We could do this in conan
-# in package_info with self.cpp_info.libs += ["-lstdc++fs"]
-# However that means that consumers of this from cmake won't get the flag
-# so we set it here instead. This assumes libstdc++.
-
-# Problem with putting this in target_link_libraries:
-# $<IF:$<AND:$<CXX_COMPILER_ID:Clang>,$<PLATFORM_ID:Linux>>,"stdc++fs","">
-# If you're the IF is false, cmake then helpfully appends -l"" to your link options
-
-    # $<:$<AND:$<CXX_COMPILER_ID:Clang>,$<PLATFORM_ID:Linux>>,"stdc++fs">
-    # $<IF:$<AND:$<CXX_COMPILER_ID:Clang>,$<PLATFORM_ID:Linux>>,"stdc++fs","">
-
-target_link_libraries(${PROJECT_NAME} INTERFACE
+target_link_libraries(${PROJECT_NAME} PUBLIC
     fmt::fmt
     range-v3::range-v3
     link_std_filesystem::link_std_filesystem
@@ -56,7 +41,9 @@ include(GNUInstallDirs)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${HEADERS}")
 
-install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}-targets PUBLIC_HEADER DESTINATION "${INSTALL_INCLUDE_DIR}/wordsearch_solver/${PROJECT_NAME}")
+install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}-targets
+    PUBLIC_HEADER
+    DESTINATION "${INSTALL_INCLUDE_DIR}/wordsearch_solver/${PROJECT_NAME}")
 
 install(EXPORT ${PROJECT_NAME}-targets
         FILE ${PROJECT_NAME}-targets.cmake
