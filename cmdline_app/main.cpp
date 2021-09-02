@@ -30,6 +30,7 @@ int main(int argc, char** argv) {
     ("w,wordsearch", "Wordsearch file", cxxopts::value<std::string>())
     ("s,solver", "Dictionary solver implementation",
      cxxopts::value<std::string>())
+    ("size", "Print size of dict_solver")
     ("h,help", "Help")
     ;
   // clang-format on
@@ -46,6 +47,7 @@ int main(int argc, char** argv) {
   std::string dict_path;
   std::string wordsearch_path;
   std::string solver;
+  const bool print_size = parsed_args["size"].as<bool>();
 
   // Pretty crap seem to have to define these exceptions manually, as otherwise
   // you get a useless error if pass only one of the arguments
@@ -90,6 +92,9 @@ int main(int argc, char** argv) {
   }
 
   const auto solver_dict = solvers.make(solver, dict_lines);
+  if (print_size) {
+    fmt::print("Size: {}\n", solver_dict.size());
+  }
 
   ProfilerRestartDisabled();
   ProfilerEnable();

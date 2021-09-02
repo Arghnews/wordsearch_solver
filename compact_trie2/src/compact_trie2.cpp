@@ -4,10 +4,18 @@
 #include "wordsearch_solver/compact_trie2/empty_node_view.hpp"
 #include "wordsearch_solver/compact_trie2/full_node_view.hpp"
 
+#include <range/v3/iterator/operations.hpp>
+#include <range/v3/range/access.hpp>
+#include <range/v3/view/adaptor.hpp>
 #include <range/v3/view/all.hpp>
 #include <range/v3/view/enumerate.hpp>
 #include <range/v3/view/slice.hpp>
 #include <range/v3/view/transform.hpp>
+
+#include <fmt/core.h>
+#include <fmt/format.h>
+#include <fmt/ostream.h>
+#include <fmt/ranges.h>
 
 #include <algorithm>
 #include <cassert>
@@ -19,11 +27,7 @@
 #include <string>
 #include <string_view>
 #include <tuple>
-
-#include <fmt/core.h>
-#include <fmt/format.h>
-#include <fmt/ostream.h>
-#include <fmt/ranges.h>
+#include <utility>
 
 namespace compact_trie2 {
 
@@ -51,6 +55,11 @@ CompactTrie2::CompactTrie2(const std::initializer_list<const char*>& words)
 
 namespace {
 
+// View onto nodes representation, where the underlying is a contiguous sequence
+// of std::uint8_t s
+// This view adaptor is based on
+// http://ericniebler.github.io/range-v3/ section Utilities, Create Custom Views
+// with view_adaptor
 template <typename Rng>
 class NodeIteratorRange
     : public ranges::view_adaptor<NodeIteratorRange<Rng>, Rng> {
@@ -58,20 +67,20 @@ class NodeIteratorRange
 
   using base_iterator_t = ranges::iterator_t<Rng>;
 
+  // Iterator adaptor for this range so that incrementing iterators respects the
+  // underlying node size and moves by the correct distance
   struct query_adaptor : public ranges::adaptor_base {
     query_adaptor() = default;
 
-    query_adaptor(NodeIteratorRange const&) {
-      // ranges::begin(rng.base());
-    }
+    query_adaptor(const NodeIteratorRange&) {}
 
-    auto read(base_iterator_t const& it) const {
-      return it; // I'm not concerned about the value returned by this range
-                 // yet.
-    }
+    auto read(base_iterator_t const& it) const { return it; }
 
+    // This is the only interesting/non-boilerplate thing in this class, we need
+    // next to increment the underlying iterator according to the size of the
+    // node
     void next(base_iterator_t& it) {
-      // Overkill for this when we can just read *it.
+      // Overkill for this when we can just read *it (vs node_size(it))
       // Leaving for now until we either have a nicer abstraction (reading *it
       // arguably breaks encapsulation somewhat) or this proves to be a
       // performance problem.
@@ -99,25 +108,18 @@ public:
 // I am unsure whether or not these motivations justify this rather unneat
 // but pragmatic way of doing this.
 void CompactTrie2::non_templated_rest_of_init() {
-  for (auto&& [row0, row1] : make_pairwise_rows_view(
+
+  // Each parent row, or row above, row0 construction depends on the child row
+  // below it, row1.
+  for (auto&& [row0, row1] : make_adjacent_pairwise_rows_view(
            ranges::views::all(data_), ranges::views::all(rows_))) {
 
     // fmt::print("\nNew row pair iteration\n");
     auto row0_range = NodeIteratorRange{ranges::views::all(row0)};
     auto row1_range = NodeIteratorRange{ranges::views::all(row1)};
-    // fmt::print("row0 ({}) and row1 ({}) {} {}\n", shitty_row_counter,
-    // shitty_row_counter + 1, row0, row1);
-    // shitty_row_counter++;
-
-    // fmt::print("Parent row: \n");
-    // print_nodeiterrange(row0_range);
-    // fmt::print("\n");
-    // fmt::print("Child row: \n");
-    // print_nodeiterrange(row1_range);
-    // fmt::print("\n");
 
     auto row1_it = row1_range.begin();
-    const auto row1_end = row1_range.end();
+    [[maybe_unused]] const auto row1_end = row1_range.end();
 
     std::size_t offset = 0;
     for (auto row0_it = row0_range.begin(); row0_it != row0_range.end();
@@ -143,18 +145,8 @@ void CompactTrie2::non_templated_rest_of_init() {
         // fmt::print("Setting next row offset to {}\n", offset);
         parent_node->set_next_row_offset(offset);
 
-        // fmt::print("&*data.begin(): {}\n", (void*)&*data.begin());
-        // fmt::print("&*data.end(): {}\n", (void*)((&*data.begin()) +
-        // data.size()));
-        //        fmt::print("data.begin {}, data.end {}",
-        //        (void*)&*data.begin(), &*data.begin() + data.size());
-
-        // fmt::print("----------\n");
-
         assert(row1_it != row1_end);
         assert(*row1_it != data_.end());
-        // fmt::print("row1_it {}\n", &**row1_it);
-
         // Move past the first child node as this node's position is the offset
         // Add that child node's size to the offset
         // fmt::print("Child node: {}\n", node_to_string(*row1_it));
@@ -173,9 +165,8 @@ void CompactTrie2::non_templated_rest_of_init() {
         // row1_it - row1_range.begin(), row1_range.size());
         ++row1_it;
 
-        // // Now for every mini offset in the parent, ie. for every child (n -
-        // 1
-        // // of them), go through child nodes and set mini offsets accordingly.
+        // Now for every mini offset in the parent, ie. for every child (n - 1
+        // of them), go through child nodes and set mini offsets accordingly.
 
         auto mini_offsets = parent_node->mini_offsets();
         // fmt::print("mini_offsets size is {}\n", mini_offsets.size());
@@ -192,7 +183,6 @@ void CompactTrie2::non_templated_rest_of_init() {
           // offset);
           assert(row1_it != row1_end);
           // fmt::print("Child node is: {}\n", node_to_string(*row1_it));
-
           // fmt::print("Parent node before mini_offset written: {}\n",
           // *parent_node);
           assert(mini_offset_start <= offset);
@@ -202,13 +192,6 @@ void CompactTrie2::non_templated_rest_of_init() {
           // fmt::print("Parent node after mini_offset written: {}\n",
           // *parent_node);
           assert(row1_it != row1_end);
-          //          fmt::print("&*(*row1_range.begin()): {}\n",
-          //          &*(*row1_range.begin()) ); fmt::print("*row1_it -
-          //          data.begin(): {}\n", *row1_it - data.begin());
-          //          fmt::print("data.size(): {}\n", data.size());
-          //          fmt::print("&*data.begin(): {}\n", &*data.begin());
-          //          fmt::print("&*data.begin() + data.size(): {}\n",
-          //          &*data.begin() + data.size());
           const auto szz = node_size(*row1_it);
           // fmt::print("Adding szz (node_size(*row1_it)) {} to offset\n", szz);
           offset += szz;
@@ -225,10 +208,6 @@ void CompactTrie2::non_templated_rest_of_init() {
       }
     }
   }
-
-  // data_ = std::move(data);
-  // rows_ = std::move(rows);
-  // size_ = size;
 }
 
 std::size_t CompactTrie2::size() const { return size_; }
@@ -238,7 +217,7 @@ std::size_t CompactTrie2::data_size() const { return data_.size(); }
 bool CompactTrie2::empty() const { return this->size() == 0; }
 
 template <class T, class Value>
-static std::optional<std::size_t> at(T&& c, Value&& v) {
+static std::optional<std::size_t> at(const T& c, Value&& v) {
   for (auto&& [i, item] : ranges::views::enumerate(c)) {
     if (item == v)
       return i;
@@ -246,20 +225,33 @@ static std::optional<std::size_t> at(T&& c, Value&& v) {
   return {};
 }
 
+/*
+ * Checks if a character c is present in the node pointed to by the iterator it.
+ * If so, returns the offset of the corresponding node for c, in the next row.
+ * Returns an empty optional if not.
+ */
 static std::optional<std::size_t> next_node_offset(const DataIterator it,
                                                    const char c) {
   auto node_variant = make_node_view_variant(it);
-  if (std::holds_alternative<EmptyNodeView>(node_variant))
+  if (std::holds_alternative<EmptyNodeView>(node_variant)) {
     return {};
+  }
 
   FullNodeView node = std::get<FullNodeView>(node_variant);
   const std::optional<std::size_t> i = at(node.data(), c);
-  if (!i)
+  if (!i) {
     return {};
+  }
+
+  // Position of node in the next row
   const std::size_t offset = node.next_row_offset();
-  if (*i == 0)
+  if (*i == 0) {
     return offset;
+  }
   // *i > 0
+  assert(*i > 0);
+
+  // Position of the particular letter in the node on the next row
   const auto additional_offset = node.mini_offsets()[static_cast<long>(*i - 1)];
   return offset + additional_offset;
 }

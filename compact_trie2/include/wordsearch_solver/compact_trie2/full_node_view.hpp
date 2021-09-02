@@ -25,11 +25,8 @@ public:
 
   auto base() const { return it_; }
 
-  // std::size_t size() const
   std::size_t size() const {
     return this->data_size() * 3 + 2;
-    // return this->data_size() * 2 + 3;
-    // return this->is_only_end_of_word() ? 1 : 2 * this->data_size() + 3;
   }
 
   bool is_only_end_of_word() const {
@@ -51,11 +48,10 @@ public:
     assert(!this->is_only_end_of_word());
     std::uint_fast32_t n{};
     std::memcpy(&n, &*(it_ + 1), 3);
-    // fmt::print("n memcpyed {} {}\n", n, std::bitset<32>{n});
-    // n &= 0x7f'ff'ff;
+
+    // In the 3 byte (24 bit) next row offset, we use the highest bit as an
+    // end_of_word flag. Therefore it must be zeroed to read the offset.
     n &= ~(1UL << 23);
-    // fmt::print("n returned {} {}\n", n, std::bitset<32>{n});
-    // Disable highest bit as it's the end_of_word bit
     return n;
   }
 

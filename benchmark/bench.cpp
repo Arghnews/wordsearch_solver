@@ -57,7 +57,7 @@ void bench_solver_init(benchmark::State& state,
 #define BENCH_SOLVER(Dict)                                                     \
   BENCHMARK_CAPTURE(bench_long_words, Dict, Dict{dict}, grid)                  \
       ->Unit(benchmark::kMillisecond);
-// ->ReportAggregatesOnly()                                                 \
+// ->ReportAggregatesOnly()
 // ->Threads(static_cast<int>(numb_threads))
 // ->Repetitions(static_cast<int>(numb_threads))
 // ->MinTime(1)

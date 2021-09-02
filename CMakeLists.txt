@@ -51,10 +51,12 @@ string(APPEND CMAKE_CXX_FLAGS " ${COMPILER_FLAGS} ")
 # Don't want to build with sanitizers when installing with cmake or packaging,
 # otherwise downstream users MUST also enable sanitizers
 
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+# This increases link time considerably, undesirable in debug builds
+# set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 
 set(DEVELOPER_FLAGS FALSE CACHE BOOL "Enable warning/sanitizer flags during development of library")
 set(USE_LINKER_FLAGS "")
+set(LTO "")
 if (DEVELOPER_FLAGS)
     set(SANITISERS " -fsanitize=address,undefined ")
 endif()
@@ -62,22 +64,25 @@ endif()
 # Who doesn't have these?
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     string(APPEND USE_LINKER_FLAGS "-fuse-ld=lld")
+    set(LTO "-flto=thin")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     string(APPEND USE_LINKER_FLAGS "-fuse-ld=gold")
+    set(LTO "-flto -fno-fat-lto-objects")
 endif()
+
 
 string(APPEND CMAKE_CXX_FLAGS_DEBUG " -g -O0 -fno-omit-frame-pointer ${SANITISERS} ")
 string(REPLACE "-DNDEBUG" "" CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
-string(APPEND CMAKE_CXX_FLAGS_RELWITHDEBINFO " -g -O2 -march=native -fno-omit-frame-pointer ${SANITISERS} ")
-string(APPEND CMAKE_CXX_FLAGS_RELEASE " -g -O3 -march=native -DNDEBUG ")
+string(APPEND CMAKE_CXX_FLAGS_RELWITHDEBINFO " -g -O2 -march=native -fno-omit-frame-pointer ${SANITISERS} ${LTO}")
+string(APPEND CMAKE_CXX_FLAGS_RELEASE " -g -O3 -march=native -DNDEBUG ${LTO}")
 
 # string(APPEND CMAKE_EXE_LINKER_FLAGS_DEBUG " -flto -fno-omit-frame-pointer ${SANITISERS} -fuse-ld=lld ")
 # string(APPEND CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO " -flto -fno-omit-frame-pointer ${SANITISERS} -fuse-ld=lld ")
 # string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " -flto -fuse-ld=lld ")
-string(APPEND CMAKE_EXE_LINKER_FLAGS " ${USE_LINKER_FLAGS} ")
-string(APPEND CMAKE_EXE_LINKER_FLAGS_DEBUG " -fno-omit-frame-pointer ${SANITISERS} ")
-string(APPEND CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO " -fno-omit-frame-pointer ${SANITISERS} ")
-string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " ")
+string(APPEND CMAKE_EXE_LINKER_FLAGS " ${USE_LINKER_FLAGS}")
+string(APPEND CMAKE_EXE_LINKER_FLAGS_DEBUG " -fno-omit-frame-pointer ${SANITISERS}")
+string(APPEND CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO " -fno-omit-frame-pointer ${SANITISERS} ${LTO}")
+string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE "${LTO}")
 
 string(APPEND CMAKE_SHARED_LINKER_FLAGS "${USE_LINKER_FLAGS}")
 
@@ -226,8 +231,13 @@ add_subdirectory(solver)
 
 add_subdirectory(benchmark)
 
-add_subdirectory(cmdline_app)
+# This takes bloody ages to link, so when not needed, don't build it
+set(WORDSEARCH_SOLVER_BUILD_CMDLINE_APP ON CACHE BOOL "Build the cmdline_app")
+if (WORDSEARCH_SOLVER_BUILD_CMDLINE_APP)
+    add_subdirectory(cmdline_app)
+endif()
 
+add_subdirectory(example)
 
 # Master/public library
 add_library(${PROJECT_NAME} INTERFACE)

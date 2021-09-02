@@ -48,6 +48,8 @@ public:
 
 private:
   using Iterator = std::vector<std::string>::const_iterator;
+  bool further_impl(const std::string_view key, Iterator first,
+                    Iterator last) const;
 
   std::vector<std::string> dict_;
 };

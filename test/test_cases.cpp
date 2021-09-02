@@ -38,15 +38,6 @@
 // through from build to program would be awesome really. Need to copy SFINAE
 // for string_view -> string construction from set to vector
 
-// To make adding a dictionary implementation less painful, add it to this
-// "list", delimited by a comma
-// #define WORDSEARCH_DICTIONARY_CLASSES compact_trie::CompactTrie, trie::Trie,
-// \
-  // compact_trie2::CompactTrie2, dictionary_std_vector::DictionaryStdVector, \
-  // dictionary_std_set::DictionaryStdSet
-
-using namespace std::literals;
-
 TEMPLATE_TEST_CASE("Test wordsearch/dict implementations", "[test]",
                    WORDSEARCH_DICTIONARY_CLASSES) {
   check_inputs();

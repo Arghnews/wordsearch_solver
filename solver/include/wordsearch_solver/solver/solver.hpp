@@ -85,7 +85,8 @@ public:
   auto solver_names() const -> decltype(ranges::views::all(solvers));
 
   template <class Words>
-  SolverDictWrapper make(const std::string_view solver, Words&& words) const;
+  SolverDictWrapper make(const std::string_view solver,
+                         Words&& dictionary) const;
 };
 
 } // namespace solver

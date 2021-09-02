@@ -3,20 +3,18 @@
 
 #include "wordsearch_solver/compact_trie2/compact_trie2_iterator_typedefs.hpp"
 
+#include <cassert>
 #include <cstdint>
 #include <ostream>
 #include <vector>
 
 namespace compact_trie2 {
 
-//#include "prettyprint.hpp"
-//#include <fmt/format.h>
-//#include <fmt/ostream.h>
-
-// Unsure if constexpr makes any difference to member functions here
+// An empty node is simply a single std::uint8_t (byte) with value 0.
 template <class Iterator> class EmptyNodeView_ {
 public:
-  constexpr explicit EmptyNodeView_(Iterator it) : it_(it) {}
+  // Unsure if constexpr makes any difference to member functions here
+  constexpr explicit EmptyNodeView_(Iterator it) : it_(it) { assert(*it == 0); }
 
   constexpr auto base() const { return it_; }
 

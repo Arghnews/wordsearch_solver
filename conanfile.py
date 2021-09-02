@@ -7,7 +7,7 @@ from distutils import dir_util
 
 class WordsearchsolverConan(ConanFile):
     name = "wordsearch_solver"
-    version = "0.1.8"
+    version = "0.1.10"
     license = "MIT"
     author = "Justin Riddell arghnews@hotmail.co.uk"
     url = "https://github.com/Arghnews/wordsearch_solver"
@@ -37,7 +37,7 @@ class WordsearchsolverConan(ConanFile):
             #  "google-profiler/0.1",
             #  "boost_container/[>=1.69.0]@bincrafters/stable",
             #  "matrix2d/[>=0.2.5]@justin_riddell/stable",
-            "matrix2d/[>=0.2.6]@arghnews/testing",
+            "matrix2d/[>=0.2.7]@arghnews/testing",
             #  "static_vector/0.1",
             #  "solver_utility/0.1",
             "boost/[>=1.76.0]",

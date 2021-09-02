@@ -1,19 +1,17 @@
 #ifndef NODE_HPP
 #define NODE_HPP
 
-#include <fmt/core.h>
-#include <fmt/format.h>
-#include <fmt/ostream.h>
-
 #include <bitset>
 #include <cstddef>
+#include <cstdint>
 #include <ostream>
 
 namespace compact_trie {
 
 class Node {
 public:
-  using PrecedingType = unsigned short int;
+  using PrecedingType = std::uint32_t;
+  // using PrecedingType = unsigned short int;
 
   Node() = default;
 
@@ -33,6 +31,17 @@ private:
   PrecedingType preceding_;
   bool is_end_of_word_;
 };
+
+// libstdc++ with gcc 8 on linux  bitset implementation uses an unsigned long to
+// back the bitset, so a bitset of size 1 is 8 bytes long. It in fact uses
+// multiples of 8, ie. sizeof(std::bitset<65>) == 16
+// Since Node will therefore be 8-byte aligned, may as well use std::uint32_t
+// for PrecedingType
+
+// static_assert(sizeof(std::bitset<1>) == 8);
+// static_assert(sizeof(std::bitset<26>) == 8);
+// static_assert(sizeof(std::bitset<65>) == 16);
+// static_assert(sizeof(Node) == 16);
 
 } // namespace compact_trie
 

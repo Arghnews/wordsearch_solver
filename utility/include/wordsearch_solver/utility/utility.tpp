@@ -5,7 +5,6 @@
 #include <fmt/core.h>
 #include <fmt/format.h>
 
-#include <functional>
 #include <range/v3/action/remove_if.hpp>
 #include <range/v3/algorithm/any_of.hpp>
 #include <range/v3/algorithm/is_sorted.hpp>
@@ -26,6 +25,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -131,7 +131,9 @@ auto words_grouped_by_prefix_suffix_impl(const Rng& words) {
 template <class Rng> auto words_grouped_by_prefix_suffix(const Rng& words) {
   using ReturnType =
       decltype(detail::words_grouped_by_prefix_suffix_impl(words));
-  if (words.empty()) {
+  // Use ranges::empty rather than words.empty to support things like
+  // initializer_list
+  if (ranges::empty(words)) {
     return ReturnType{};
   } else {
     if (!ranges::is_sorted(words)) {

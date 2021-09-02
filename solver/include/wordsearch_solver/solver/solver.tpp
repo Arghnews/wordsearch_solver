@@ -328,37 +328,37 @@ void SolverDictWrapper::contains_further(
 
 template <class Words>
 SolverDictWrapper SolverDictFactory::make(const std::string_view solver,
-                                          Words&& words) const {
+                                          Words&& dictionary) const {
 #ifdef WORDSEARCH_SOLVER_HAS_trie
   if (solver == "trie") {
     return SolverDictWrapper{std::in_place_type<trie::Trie>,
-                             std::forward<Words>(words)};
+                             std::forward<Words>(dictionary)};
   }
 #endif
 #ifdef WORDSEARCH_SOLVER_HAS_compact_trie
   if (solver == "compact_trie") {
     return SolverDictWrapper{std::in_place_type<compact_trie::CompactTrie>,
-                             std::forward<Words>(words)};
+                             std::forward<Words>(dictionary)};
   }
 #endif
 #ifdef WORDSEARCH_SOLVER_HAS_compact_trie2
   if (solver == "compact_trie2") {
     return SolverDictWrapper{std::in_place_type<compact_trie2::CompactTrie2>,
-                             std::forward<Words>(words)};
+                             std::forward<Words>(dictionary)};
   }
 #endif
 #ifdef WORDSEARCH_SOLVER_HAS_dictionary_std_vector
   if (solver == "dictionary_std_vector") {
     return SolverDictWrapper{
         std::in_place_type<dictionary_std_vector::DictionaryStdVector>,
-        std::forward<Words>(words)};
+        std::forward<Words>(dictionary)};
   }
 #endif
 #ifdef WORDSEARCH_SOLVER_HAS_dictionary_std_set
   if (solver == "dictionary_std_set") {
     return SolverDictWrapper{
         std::in_place_type<dictionary_std_set::DictionaryStdSet>,
-        std::forward<Words>(words)};
+        std::forward<Words>(dictionary)};
   }
 #endif
   throw std::runtime_error(fmt::format("No such solver {}", solver));

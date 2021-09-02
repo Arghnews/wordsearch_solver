@@ -42,8 +42,15 @@ bool DictionaryStdVector::contains(const std::string_view key) const {
 }
 
 bool DictionaryStdVector::further(const std::string_view prefix) const {
-  const auto it = std::upper_bound(dict_.begin(), dict_.end(), prefix);
-  if (it == dict_.end()) {
+  return this->further_impl(prefix, dict_.begin(), dict_.end());
+}
+
+bool DictionaryStdVector::further_impl(const std::string_view prefix,
+                                       const Iterator first,
+                                       const Iterator last) const {
+  assert(last >= first);
+  const auto it = std::upper_bound(first, last, prefix);
+  if (it == last) {
     return false;
   }
   const auto& word = *it;

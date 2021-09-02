@@ -19,6 +19,7 @@
 #include <range/v3/action/unique.hpp>
 #include <range/v3/algorithm/for_each.hpp>
 #include <range/v3/algorithm/is_sorted.hpp>
+#include <range/v3/algorithm/sort.hpp>
 #include <range/v3/view/all.hpp>
 #include <range/v3/view/drop.hpp>
 #include <range/v3/view/drop_exactly.hpp>
@@ -88,8 +89,8 @@ template <class Iterator> std::string node_to_string(Iterator it) {
 // (InputRange and ForwardOutputIterator)
 // However it's hard to see exactly how to do this. Leaving for now
 template <class OutputIterator, class ForwardCharsRange>
-void make_node(ForwardCharsRange&& rng, OutputIterator out,
-               bool is_end_of_word) {
+void make_node(const ForwardCharsRange& rng, OutputIterator out,
+               const bool is_end_of_word) {
   static_assert(ranges::sized_range<ForwardCharsRange>,
                 "The range passed to make node must be sized.");
   // static_assert(ranges::output_iterator<OutputIterator, std::uint8_t>);
@@ -139,7 +140,8 @@ auto make_row_view(DataView&& data_view, RowIndexes&& row_indexes) {
 }
 
 template <class DataView, class RowIndexes>
-auto make_pairwise_rows_view(DataView&& data_view, RowIndexes&& row_indexes) {
+auto make_adjacent_pairwise_rows_view(DataView&& data_view,
+                                      RowIndexes&& row_indexes) {
   return ranges::views::zip(make_row_view(data_view, row_indexes),
                             make_row_view(data_view, row_indexes) |
                                 ranges::views::drop(1));
@@ -195,6 +197,7 @@ CompactTrie2::CompactTrie2(ForwardRange&& words)
     // fmt::print("The range is not sorted\n");
     if (is_sortable(words)) {
       // fmt::print("It's sortable\n");
+
       sort_if_possible(words);
       init(words);
     } else {
