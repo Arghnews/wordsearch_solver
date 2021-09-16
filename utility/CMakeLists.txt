@@ -12,7 +12,7 @@ set(INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
 set(INSTALL_INCLUDE_DIR "include")
 set(SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
-set(HEADERS "utility.hpp" "utility.tpp" "flat_char_value_map.hpp")
+set(HEADERS "utility.hpp" "utility.tpp" "flat_char_value_map.hpp" "lru_cache.hpp")
 set(SOURCES "utility.cpp")
 
 list(TRANSFORM HEADERS PREPEND "${INCLUDE_DIR}/wordsearch_solver/${PROJECT_NAME}/")

@@ -19,6 +19,8 @@
 
 namespace compact_trie2 {
 
+/** Class representing a full node, storing
+ */
 template <class Iterator> class FullNodeView_ {
 public:
   explicit FullNodeView_(Iterator it) : it_(it) {}

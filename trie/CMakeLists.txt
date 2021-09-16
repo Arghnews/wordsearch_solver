@@ -57,16 +57,3 @@ install(EXPORT ${PROJECT_NAME}-targets
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/wordsearch_solver/${PROJECT_NAME}"
          )
 
-# make_compile_commands(
-    # TARGET_TO_REBUILD_ON ${PROJECT_NAME}
-    # DESTINATION "${PROJECT_SOURCE_DIR}")
-
-# # EXCLUDE_FROM_ALL
-# add_executable(${PROJECT_NAME}_main main.cpp)
-# target_link_libraries(${PROJECT_NAME}_main ${PROJECT_NAME}::${PROJECT_NAME} "-O0")
-
-# set_target_properties(${PROJECT_NAME}_main PROPERTIES
-    # CXX_STANDARD 17
-    # CXX_STANDARD_REQUIRED ON
-    # CXX_EXTENSIONS OFF)
-

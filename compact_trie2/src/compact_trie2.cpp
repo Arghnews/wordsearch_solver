@@ -1,5 +1,6 @@
 #include "wordsearch_solver/compact_trie2/compact_trie2.hpp"
 
+#include "wordsearch_solver/utility/utility.hpp"
 #include "wordsearch_solver/compact_trie2/compact_trie2_iterator_typedefs.hpp"
 #include "wordsearch_solver/compact_trie2/empty_node_view.hpp"
 #include "wordsearch_solver/compact_trie2/full_node_view.hpp"
@@ -28,6 +29,9 @@
 #include <string_view>
 #include <tuple>
 #include <utility>
+
+// FIXME: Remove this
+#include <iostream>
 
 namespace compact_trie2 {
 
@@ -111,8 +115,9 @@ void CompactTrie2::non_templated_rest_of_init() {
 
   // Each parent row, or row above, row0 construction depends on the child row
   // below it, row1.
+  const auto& rows = rows_;
   for (auto&& [row0, row1] : make_adjacent_pairwise_rows_view(
-           ranges::views::all(data_), ranges::views::all(rows_))) {
+           ranges::views::all(data_), ranges::views::all(rows))) {
 
     // fmt::print("\nNew row pair iteration\n");
     auto row0_range = NodeIteratorRange{ranges::views::all(row0)};
@@ -313,8 +318,9 @@ CompactTrie2::search(const std::string_view word, DataIterator it,
 
     // fmt::print("Incing \n");
     ++rows_it;
-    it = data_.begin() + static_cast<long>(*rows_it) +
-         static_cast<long>(*next_row_offset);
+    // it = data_.begin() + static_cast<long>(*rows_it) +
+    // static_cast<long>(*next_row_offset);
+    it = *rows_it + static_cast<long>(*next_row_offset);
     ++i;
     if (use_cache)
       cache_.append(c, {it, rows_it});
@@ -332,14 +338,12 @@ std::ostream& operator<<(std::ostream& os, const CompactTrie2& ct) {
   fmt::memory_buffer buff{};
   fmt::format_to(buff, "Trie of size: {} ({} bytes):\n", ct.size(),
                  ct.data_size());
-  for (auto [i, row] :
-       make_adjacent_view(ct.rows_) |
-           ranges::views::transform([&data = ct.data_](const auto row) {
-             const auto [row_start, row_end] = row;
-             return ranges::views::slice(data, static_cast<long>(row_start),
-                                         static_cast<long>(row_end));
-           }) |
-           ranges::views::enumerate) {
+  for (auto [i, row] : utility::make_adjacent_view(ct.rows_) |
+                           ranges::views::transform([](const auto row) {
+                             const auto [row_start, row_end] = row;
+                             return ranges::subrange(row_start, row_end);
+                           }) |
+                           ranges::views::enumerate) {
     fmt::format_to(buff, "Row i: {}\n", i);
     for (auto it : NodeIteratorRange{ranges::views::all(row)}) {
       fmt::format_to(buff, "{}\n", node_to_string(it));

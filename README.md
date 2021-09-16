@@ -121,6 +121,18 @@ Lookup for a word of length m is O(m), plus likely better cache locality (unless
 
 - compact_trie2
 
+In the compact_trie, every node is a fixed size (happens to be 16 bytes currently on my system x64 libstdc++8). There must be at least as many nodes as words, roughly ~115k in the (slightly altered) GNU English dictionary used for this. There may be more, if for example a node is required to represent child nodes, but is not a word itself.
+
+For example, the prefix "abj" is not a word, but would need a node in the compact_trie trie, to allow it to link to other words that have "abj" as a prefix, such as "abject".
+
+The idea with compact_trie2 was to try and optimise this further, to allow for two types of node.
+
+In this trie, there are empty nodes and full ones.
+* Full nodes are like the nodes in any other trie, they can represent the end of a word, plus have links to child nodes.
+* Empty nodes are one byte, and represent only the end of a word.
+
+The hope was a tradeoff in saving space would offset the additional lookup complexity in this data structure. A complication that arises is the variable sizes of nodes, offset calcuation is more complex.
+
 The idea with this trie was to have everything inline in one data structure.
 Unfortunately, performance tends to be only slightly better than the (pointer) trie, and worse than the compact_trie. It has to do more work at each node to calculate the offset to the next one.
 

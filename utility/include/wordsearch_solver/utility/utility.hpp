@@ -54,6 +54,11 @@ read_file_as_lines_keep_lowercase_ascii_only(const std::string& filepath);
 
 template <class String> void throw_if_not_lowercase_ascii(const String& word);
 
+template <class Range> auto make_adjacent_view(const Range& rng);
+
+template <class DataView, class RowIndexes>
+auto make_row_view(DataView&& data_view, const RowIndexes& row_indexes);
+
 } // namespace utility
 
 #include "wordsearch_solver/utility/utility.tpp"

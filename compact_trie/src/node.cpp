@@ -10,6 +10,9 @@
 #include <limits>
 #include <ostream>
 
+// NOTE: I hate all the hard coded 97s and 123s for ascii lowercase start/end.
+// Would be nice to have some kind of abstraction over that.
+
 namespace compact_trie {
 
 std::ostream& operator<<(std::ostream& os, const Node& node) {

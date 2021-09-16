@@ -68,8 +68,11 @@ private:
   search(const std::string_view word, DataIterator it,
          RowIterator rows_it) const;
 
-  std::vector<std::uint8_t> data_;
-  std::vector<std::size_t> rows_;
+  using ContiguousContainer = std::vector<std::uint8_t>;
+  using ContiguousContainerIterator = ContiguousContainer::iterator;
+
+  ContiguousContainer data_;
+  std::vector<ContiguousContainerIterator> rows_;
   std::size_t size_;
   mutable utility::FlatCharValueMap<std::pair<DataIterator, RowIterator>>
       cache_;

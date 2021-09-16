@@ -14,11 +14,13 @@
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/range/primitives.hpp>
 #include <range/v3/view/all.hpp>
+#include <range/v3/view/drop.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/group_by.hpp>
 #include <range/v3/view/iota.hpp>
 #include <range/v3/view/transform.hpp>
 #include <range/v3/view/unique.hpp>
+#include <range/v3/view/zip.hpp>
 
 #include <algorithm>
 #include <cassert>
@@ -154,6 +156,33 @@ template <class String> void throw_if_not_lowercase_ascii(const String& word) {
           word));
     }
   }
+}
+
+/** Given [1, 2, 3, 4], returns [{1, 2}, {2, 3}, {3, 4}]
+ * @param[in] rng A forward range or better
+ */
+template <class Range> auto make_adjacent_view(const Range& rng) {
+  return ranges::views::zip(ranges::views::all(rng),
+                            ranges::views::all(rng) | ranges::views::drop(1));
+}
+
+/** Outputs a row view onto @p data_view for each difference between indexes in
+ * @p row_indexes
+ *
+ * @param data_view[in] A view onto data
+ * @param row_indexes[in] Indexes splitting the data view into rows
+ *
+ * Example:
+ * `make_row_view("abcdef", {0, 2, 5, 6}) => ("ab", "cde", "f")`
+ */
+template <class DataView, class RowIndexes>
+auto make_row_view(DataView&& data_view, const RowIndexes& row_indexes) {
+  return make_adjacent_view(row_indexes) |
+         ranges::views::transform(
+             [data_view = std::forward<DataView>(data_view)](const auto row) {
+               const auto [row_start, row_end] = row;
+               return ranges::subrange(row_start, row_end);
+             });
 }
 
 } // namespace utility

@@ -8,6 +8,8 @@
 
 namespace compact_trie {
 
+/** Bitset based node representing suffixes/letters.
+ */
 class Node {
 public:
   using PrecedingType = std::uint32_t;
@@ -19,11 +21,28 @@ public:
   void set_preceding(std::size_t preceding);
   void set_is_end_of_word(bool is_end_of_word);
 
+  /** @returns Number of on bits/suffixes before the bit at index @p i. Used for
+   * calculating the offset into the next row for child nodes.
+   * @param[in] i
+   */
   std::size_t bits_on_before(std::size_t i) const;
+
+  /** O(1) test if a suffix is present.
+   * @param[in] i Suffix/letter to test, 0 == 'a', 1 == 'b'...
+   */
   bool test(std::size_t i) const;
+
+  /** @returns True if any suffixes are present/child nodes of this one exist.
+   */
   bool any() const;
+
   bool is_end_of_word() const;
+
+  /** @returns The number of suffixes of words in the row prior to this `Node`,
+   * used for calculating the offset into the next row for child nodes.
+   */
   PrecedingType preceding() const;
+
   friend std::ostream& operator<<(std::ostream& os, const Node& node);
 
 private:

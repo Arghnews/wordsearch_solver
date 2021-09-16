@@ -43,41 +43,35 @@ std::ostream& operator<<(std::ostream& os, const Node& node) {
 Node* Node::add_char(const char c) {
   // assert(c >= 97 && c < 123);
   // Note comparator lambda here compares an edge and a char, not two edges
+  // Insertion is sorted
   auto it = std::lower_bound(
       edges_.begin(), edges_.end(), c,
       [](const auto& edge0, const char c) { return edge0.c < c; });
-  // [c] (const auto& edge) { decltype(edge)::sdn; return edge.c < c; });
   if (it == edges_.end() || it->c > c) {
-    Edge edge{std::make_unique<Node>(), c};
-    // Cannot construct the edge inline, unsure as to precisely why
-    // it = edges_.emplace(it, std::move(edge));
-    it = edges_.insert(it, std::move(edge));
+    it = edges_.emplace(it, Edge{std::make_unique<Node>(), c});
   }
+  assert(it->child.get() != nullptr);
   return it->child.get();
 }
-
-// std::vector<Node::Edge>::const_iterator Node::find(const std::size_t i) const
-// {
-// assert(i >= 0 && i < 26);
-// return std::find(edges_.begin(), edges_.end(), i);
-// }
-
-// void Node::set_preceding(const std::size_t preceding)
-// {
-// assert(preceding < std::numeric_limits<PrecedingType>::max());
-// preceding_ = static_cast<PrecedingType>(preceding);
-// }
 
 void Node::set_is_end_of_word(const bool is_end_of_word) {
   is_end_of_word_ = is_end_of_word;
 }
 
+/** Test if a node has an edge containing the character @p c
+ *
+ * @note We use linear search here. Could use binary search. For the English
+ * alphabet, nodes tend to be fairly sparse and small, especially once beyond
+ * the first few letters. On the massive_wordsearch benchmark,
+ * using binary search is noticably (~8%) slower.
+ */
 const Node* Node::test(const char c) const {
-  // assert(c >= 97 && c < 123);
-  // return std::find(edges_.begin(), edges_.end(),
-  // [c] (const auto& edge) { return edge.c == c; }) != edges_.end();
   const auto it = std::find_if(edges_.begin(), edges_.end(),
                                [c](const auto& edge) { return edge.c == c; });
+  // const auto it = std::lower_bound(
+  // edges_.begin(), edges_.end(), c,
+  // [](const auto& edge, const char c) { return edge.c < c; });
+  // if (it == edges_.end() || it->c != c) {
   if (it == edges_.end()) {
     return nullptr;
   }

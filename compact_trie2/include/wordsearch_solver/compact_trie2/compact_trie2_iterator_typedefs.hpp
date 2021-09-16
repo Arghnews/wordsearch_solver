@@ -10,7 +10,7 @@ namespace compact_trie2 {
 using DataContainer = std::vector<std::uint8_t>;
 using DataIterator = DataContainer::const_iterator;
 using DataIteratorMut = DataContainer::iterator;
-using RowContainer = std::vector<std::size_t>;
+using RowContainer = std::vector<DataIteratorMut>;
 using RowIterator = RowContainer::const_iterator;
 using RowIteratorMut = RowContainer::iterator;
 

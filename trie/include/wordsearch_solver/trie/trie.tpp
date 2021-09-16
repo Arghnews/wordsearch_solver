@@ -25,14 +25,10 @@ template <class Iterator1, class Iterator2>
 Trie::Trie(Iterator1 first, const Iterator2 last)
     : Trie(std::vector<std::string>(first, last)) {}
 
+/** The constructor that actually does the work */
 template <class Strings>
 Trie::Trie(Strings&& strings_in) : root_{}, size_{}, cache_{} {
-  // for (const auto &word : strings_in) {
-  // utility::throw_if_not_lowercase_ascii(word);
-  // }
-
   for (const auto& word : ranges::views::unique(strings_in)) {
-    // This returns a ptr if is real, not unique/inseted!"
     if (this->insert(word).second) {
       ++size_;
     }

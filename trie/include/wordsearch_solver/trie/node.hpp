@@ -17,6 +17,9 @@
 
 namespace trie {
 
+/** A vector of edges to child nodes, sorted by edge child node character value,
+ * and a bool indicating whether or not a word terminates at this node.
+ */
 class Node {
 private:
   // I dislike this. We store a char here but really we're storing a [0, 26)
@@ -39,8 +42,10 @@ public:
   Node() = default;
   Node(bool is_end_of_word);
 
+  /** Inserts a child node corresponding to the character @p c if it doesn't
+   * exist, and returns a pointer to the child node.
+   */
   Node* add_char(char c);
-  // void set_preceding(std::size_t preceding);
   void set_is_end_of_word(bool is_end_of_word);
 
   const Node* test(const char c) const;
@@ -51,6 +56,9 @@ public:
 
   // This is here so the owning trie can print nodes and get their children.
   // Not delighted about it.
+  // Don't want to make the Trie a friend as introduces circular dependency.
+  // Could use Passkey idiom I believe?
+  // Since this is const, leave it for now.
   const Edges& edges() const;
 
 private:

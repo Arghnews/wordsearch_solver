@@ -10,18 +10,24 @@
 
 namespace compact_trie2 {
 
-// An empty node is simply a single std::uint8_t (byte) with value 0.
+/** An empty node is simply a single std::uint8_t (byte) with value 0.
+ */
 template <class Iterator> class EmptyNodeView_ {
 public:
   // Unsure if constexpr makes any difference to member functions here
   constexpr explicit EmptyNodeView_(Iterator it) : it_(it) { assert(*it == 0); }
 
+  /** @returns The underlying iterator */
   constexpr auto base() const { return it_; }
 
+  /** @returns The size in bytes of the node */
   constexpr std::size_t size() const { return 1; }
 
+  /** @returns Trivially true for an EmptyNodeView_ */
   constexpr bool is_only_end_of_word() const { return true; }
 
+  /** @returns The size in bytes of the data section of this node, 0 for
+   * EmptyNodeView_ */
   constexpr std::uint8_t data_size() const {
     // gcc complains that the iterator's operator* here isn't constexpr
     // clang doesn't
@@ -29,6 +35,7 @@ public:
     return 0;
   }
 
+  /** @returns Trivially true for an EmptyNodeView_ */
   constexpr bool is_end_of_word() const { return true; }
 
   friend std::ostream& operator<<(std::ostream& os, const EmptyNodeView_&) {

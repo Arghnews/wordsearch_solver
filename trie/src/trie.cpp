@@ -59,6 +59,7 @@ std::ostream& operator<<(std::ostream& os, const Trie& ct) {
   fmt::format_to(buff, "Size: {}\n", ct.size());
   std::vector<const Node*> nodes{&ct.root_};
   std::vector<const Node*> next_row;
+  // Breadth first/row by row traversal
   while (!nodes.empty()) {
     for (const auto* node : nodes) {
       fmt::format_to(buff, "{}", *node);
@@ -72,6 +73,10 @@ std::ostream& operator<<(std::ostream& os, const Trie& ct) {
   return os << fmt::to_string(buff);
 }
 
+/**
+ * @return `Node*` to the node corresponding to the end of the word if found,
+ * else `nullptr`
+ */
 const Node* Trie::search(std::string_view word) const {
   const Node* p = &root_;
 
@@ -100,6 +105,11 @@ const Node* Trie::search(std::string_view word) const {
   return p;
 }
 
+/**
+ * @returns A `std::pair` of a pointer to the node corresponding to the end
+ * of the word, and a bool indicating whether or not insertion was successful
+ * (`false` if the word was already present).
+ */
 std::pair<Node*, bool> Trie::insert(std::string_view word) {
   Node* p = &root_;
 

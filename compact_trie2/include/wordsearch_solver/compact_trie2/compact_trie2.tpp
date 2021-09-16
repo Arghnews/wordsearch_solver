@@ -29,6 +29,7 @@
 #include <range/v3/view/unique.hpp>
 #include <range/v3/view/zip.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <iterator>
 #include <limits>
@@ -122,28 +123,11 @@ void make_node(const ForwardCharsRange& rng, OutputIterator out,
   });
 }
 
-template <class Range> auto make_adjacent_view(Range&& rng) {
-  return ranges::views::zip(ranges::views::all(std::forward<Range>(rng)),
-                            ranges::views::all(std::forward<Range>(rng)) |
-                                ranges::views::drop(1));
-}
-
-template <class DataView, class RowIndexes>
-auto make_row_view(DataView&& data_view, RowIndexes&& row_indexes) {
-  return make_adjacent_view(row_indexes) |
-         ranges::views::transform([data_view = std::forward<DataView>(
-                                       data_view)](const auto row) {
-           const auto [row_start, row_end] = row;
-           return ranges::views::slice(data_view, static_cast<long>(row_start),
-                                       static_cast<long>(row_end));
-         });
-}
-
 template <class DataView, class RowIndexes>
 auto make_adjacent_pairwise_rows_view(DataView&& data_view,
                                       RowIndexes&& row_indexes) {
-  return ranges::views::zip(make_row_view(data_view, row_indexes),
-                            make_row_view(data_view, row_indexes) |
+  return ranges::views::zip(utility::make_row_view(data_view, row_indexes),
+                            utility::make_row_view(data_view, row_indexes) |
                                 ranges::views::drop(1));
 }
 
@@ -184,7 +168,7 @@ CompactTrie2::CompactTrie2(Iterator1 first, const Iterator2 last)
 // constrain this to a ForwardRange
 template <class ForwardRange>
 CompactTrie2::CompactTrie2(ForwardRange&& words)
-    : data_(), rows_{0}, size_(0), cache_() {
+    : data_(), rows_{}, size_(0), cache_() {
 
   // Just not going to handle these. Need deep not pointer comparator and call
   // strlen to get size etc
@@ -219,6 +203,7 @@ template <class T> void CompactTrie2::init(T&& words_view) {
   }
 
   auto data_insert_iter = std::back_inserter(data_);
+  std::vector<std::size_t> rows{0};
 
   for (auto words_by_length :
        utility::words_grouped_by_prefix_suffix(words_view)) {
@@ -231,10 +216,15 @@ template <class T> void CompactTrie2::init(T&& words_view) {
       // fmt::print("{} -> {}, end_of_word: {}\n", prefix,
       // suffixes | ranges::to<std::vector>(), is_end_of_word);
     }
-    const auto new_row_end = static_cast<long>(data_.size());
+    const auto new_row_end = data_.size();
     // fmt::print("row {}\n", new_row_end);
     // fmt::print("row {} -> {}\n", old_row_end, new_row_end);
-    ranges::push_back(rows_, new_row_end);
+    rows.push_back(new_row_end);
+  }
+
+  for (const auto& data_index : rows) {
+    assert(data_index <= data_.size());
+    rows_.push_back(std::next(data_.begin(), static_cast<long>(data_index)));
   }
 
   non_templated_rest_of_init();

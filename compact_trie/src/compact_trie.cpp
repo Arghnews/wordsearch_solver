@@ -1,4 +1,5 @@
 #include "wordsearch_solver/compact_trie/compact_trie.hpp"
+#include "wordsearch_solver/utility/utility.hpp"
 
 #include <fmt/core.h>
 #include <fmt/format.h>
@@ -25,27 +26,6 @@
 // sure if "trivial" means what I think it does anyway, remove this likely..
 // TODO: maybe look into units library for the ascii/index conversion stuff, as
 // that has already wasted a significant amount of time with offset stuff
-
-namespace {
-
-template <class Range> auto make_adjacent_view(const Range& rng) {
-  return ranges::views::zip(ranges::views::all(rng),
-                            ranges::views::all(rng) | ranges::views::drop(1));
-}
-
-template <class DataView, class RowIndexes>
-auto make_row_view(DataView&& data_view, const RowIndexes& row_indexes) {
-  return make_adjacent_view(row_indexes) |
-         ranges::views::transform(
-             [data_view = std::forward<DataView>(data_view)](const auto row) {
-               const auto [row_start, row_end] = row;
-               return ranges::subrange(row_start, row_end);
-               // return ranges::views::slice(data_view,
-               // static_cast<long>(row_start), static_cast<long>(row_end));
-             });
-}
-
-} // namespace
 
 namespace compact_trie {
 
@@ -101,7 +81,7 @@ std::ostream& operator<<(std::ostream& os, const CompactTrie& ct) {
   fmt::memory_buffer buff{};
   fmt::format_to(buff, "Size: {}\n", ct.size());
   for (const auto [i, row] :
-       ranges::views::enumerate(make_row_view(ct.nodes_, ct.rows_))) {
+       ranges::views::enumerate(utility::make_row_view(ct.nodes_, ct.rows_))) {
     fmt::format_to(buff, "Row: {}\n", i);
     for (const auto& node : row) {
       fmt::format_to(buff, "{}", node);
@@ -118,6 +98,17 @@ std::ostream& operator<<(std::ostream& os, const CompactTrie& ct) {
 
 namespace {
 
+/** Given a node @p node_it, the row it's in @p rows_it and an index @p i
+ * (letter/suffix in the node), return the child node in the next row if the
+ * node has that letter, else @p nodes_end
+ *
+ * @param[in] node_it Iterator to node
+ * @param[in] rows_it Iterator to current row that @p node_it is in
+ * @param[in] index Letter/suffix index, 'a' == 0, 'b' == 1
+ * @param[in] nodes_end
+ * @param[in] rows_end
+ * @returns Iterator to node in next row on success, else @p nodes_end
+ */
 CompactTrie::NodesIterator follow(const CompactTrie::NodesIterator node_it,
                                   CompactTrie::RowsIterator rows_it,
                                   const std::uint8_t index,

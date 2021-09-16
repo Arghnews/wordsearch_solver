@@ -59,3 +59,7 @@ Release, linking with default bfd, 1m43s, gold, 1m30s, clang+lld, 30s
 
 
 ✓ Currently have some circular includes in solver, fix those
+
+- Clean up the constructor delegation/initialisation mess between compact_trie and compact_trie2
+    * Thinking move something out to utility
+
