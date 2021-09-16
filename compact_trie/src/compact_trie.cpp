@@ -28,14 +28,13 @@
 
 namespace {
 
-template <class Range> auto make_adjacent_view(Range&& rng) {
-  return ranges::views::zip(ranges::views::all(std::forward<Range>(rng)),
-                            ranges::views::all(std::forward<Range>(rng)) |
-                                ranges::views::drop(1));
+template <class Range> auto make_adjacent_view(const Range& rng) {
+  return ranges::views::zip(ranges::views::all(rng),
+                            ranges::views::all(rng) | ranges::views::drop(1));
 }
 
 template <class DataView, class RowIndexes>
-auto make_row_view(DataView&& data_view, RowIndexes&& row_indexes) {
+auto make_row_view(DataView&& data_view, const RowIndexes& row_indexes) {
   return make_adjacent_view(row_indexes) |
          ranges::views::transform(
              [data_view = std::forward<DataView>(data_view)](const auto row) {
