@@ -37,12 +37,12 @@ std::size_t DictionaryStdVector::size() const { return dict_.size(); }
 
 bool DictionaryStdVector::empty() const { return dict_.empty(); }
 
-bool DictionaryStdVector::contains(const std::string_view key) const {
-  return std::binary_search(dict_.begin(), dict_.end(), key);
+bool DictionaryStdVector::contains(const std::string_view word) const {
+  return std::binary_search(dict_.begin(), dict_.end(), word);
 }
 
-bool DictionaryStdVector::further(const std::string_view prefix) const {
-  return this->further_impl(prefix, dict_.begin(), dict_.end());
+bool DictionaryStdVector::further(const std::string_view word) const {
+  return this->further_impl(word, dict_.begin(), dict_.end());
 }
 
 bool DictionaryStdVector::further_impl(const std::string_view prefix,

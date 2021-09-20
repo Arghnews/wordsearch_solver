@@ -13,6 +13,9 @@
 
 namespace compact_trie2 {
 
+/** 2 byte wide view onto the offsets of child nodes, relative to the
+ * CompactTrie2::next_row_offset().
+ */
 template <class Rng>
 class MiniOffsets : public ranges::view_facade<MiniOffsets<Rng>> {
 public:
@@ -27,7 +30,8 @@ public:
       using ranges::basic_mixin<cursor>::basic_mixin;
       explicit mixin(I it) : mixin{cursor{std::forward<I>(it)}} {}
       I base() const { return this->get().it_; }
-      void write(const std::size_t val) {
+      void write(const std::uint16_t val) {
+        // This assert is now trivially fulfilled
         assert(val < (1 << 2 * 8));
         // fmt::print("Write\n");
         std::memcpy(&*this->get().it_, &val, 2);
@@ -38,7 +42,7 @@ public:
 
     explicit cursor(I it) : it_(std::forward<I>(it)) {}
     void next() { ranges::advance(it_, 2); }
-    auto read() const {
+    std::uint16_t read() const {
       std::uint16_t n{};
       std::memcpy(&n, &*it_, 2);
       // fmt::print("Read\n");

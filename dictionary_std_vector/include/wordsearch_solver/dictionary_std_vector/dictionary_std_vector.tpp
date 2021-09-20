@@ -12,6 +12,8 @@
 #include <string_view>
 #include <utility>
 
+/** Namespace dictionary_std_vector
+ */
 namespace dictionary_std_vector {
 
 // Actual cons that does the work
@@ -23,17 +25,23 @@ DictionaryStdVector::DictionaryStdVector(Iterator1 first, const Iterator2 last)
 }
 
 template <class ForwardRange>
-DictionaryStdVector::DictionaryStdVector(ForwardRange&& words)
+DictionaryStdVector::DictionaryStdVector(const ForwardRange& words)
     : DictionaryStdVector(words.begin(), words.end()) {}
 
-// To allow binary searching more efficiently when using a word and suffixes, we
-// need to be able to calculate lower and upper limits on the search in a
-// lexicographically sorted list of words. std::lower_bound(word) gives the
-// start. This will calculate the end. Returns empty optional if no value ie.
-// the end iterator should be used.
-// Usually this is simple ie. zap -> zaq (increment last)
-// But if last is the highest allowed value, then we must keep removing the last
-// element until we have an end that isn't the highest allowed.
+/** From @p word, calculate the last possible string we would need to search to,
+ * for a valid further() call, to optimise calls in contains_further().
+ *
+ * @param[in] word
+ *
+ * To allow binary searching more efficiently when using a word and suffixes,
+ *  we need to be able to calculate lower and upper limits on the search in a
+ *  lexicographically sorted list of words. `std::lower_bound(word)` gives the
+ *  start. This will calculate the end. Returns empty optional if no value ie.
+ *  the end iterator should be used.
+ *  Usually this is simple ie. zap -> zaq (increment last)
+ *  But if last is the highest allowed value, then we must keep removing the
+ *  last element until we have an end that isn't the highest allowed.
+ */
 inline std::optional<std::string> calc_stop(std::string word) {
   const auto highest_domain_value = std::numeric_limits<char>::max();
   for (auto it = word.rbegin(); it != word.rend(); ++it) {

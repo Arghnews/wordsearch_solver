@@ -19,14 +19,17 @@
 
 namespace compact_trie2 {
 
-/** Class representing a full node, storing
+/** Class representing a full node, a view into a contiguous array. A word may
+ * end here, and offsets to edges to child nodes are stored here.
  */
 template <class Iterator> class FullNodeView_ {
 public:
   explicit FullNodeView_(Iterator it) : it_(it) {}
 
+  /** @returns The underlying iterator where this node begins. */
   auto base() const { return it_; }
 
+  /** @returns The size of the node in bytes */
   std::size_t size() const {
     return this->data_size() * 3 + 2;
   }
@@ -36,20 +39,27 @@ public:
     // return this->data_size() == 0;
   }
 
+  /** Number of letters stored in this node */
   std::uint8_t data_size() const { return *it_; }
 
+  /** @returns Whether or not a word terminates here. */
   bool is_end_of_word() const {
     // fmt::print("THIS IS THE DROID YOU'RE LOOKING FOR\n");
     // fmt::print("it_ + 1: {:#08x}\n", uint(*(it_ + 1)));
     // fmt::print("it_ + 2: {:#08x}\n", uint(*(it_ + 2)));
     // fmt::print("it_ + 3: {:#08x}\n", uint(*(it_ + 3)));
+
+    // Return the highest bit of the "3 byte integer offset"
+    // Would be nice not have to this hard coded to 3
     return *(it_ + 3) & 0x80;
   }
 
+  /** @returns Starting offset in the next row of child nodes. */
   std::uint_fast32_t next_row_offset() const {
     assert(!this->is_only_end_of_word());
     std::uint_fast32_t n{};
     std::memcpy(&n, &*(it_ + 1), 3);
+    // Where's my c++20 std::bit_cast
 
     // In the 3 byte (24 bit) next row offset, we use the highest bit as an
     // end_of_word flag. Therefore it must be zeroed to read the offset.
@@ -57,11 +67,14 @@ public:
     return n;
   }
 
+  /** @returns A range over the letters/suffixes in this node. */
   auto data() const {
     const auto offset = it_ + 4;
     return ranges::subrange(offset, offset + this->data_size());
   }
 
+  /** @returns A range of 2 byte offsets into each child node, relative to the
+   * next_row_offset */
   auto mini_offsets() const {
     assert(!this->is_only_end_of_word());
     const auto offset = it_ + 4 + this->data_size();
@@ -70,7 +83,9 @@ public:
         ranges::subrange(offset, offset + 2 * (this->data_size() - 1)));
   }
 
-  // next_row_offset in bytes
+  /** Set the 23 bit next_row_offset from a 4byte unsigned int
+   * @param[in] next_row_offset
+   */
   template <class = std::enable_if_t<std::is_convertible_v<
                 std::add_pointer_t<ranges::iter_value_t<Iterator>>, void*>>>
   void set_next_row_offset(const std::uint_fast32_t next_row_offset) {

@@ -12,6 +12,21 @@
 
 namespace utility {
 
+/** A small cache for each character of a word and an associated value, such as
+ * iterator into a trie for each character.
+ *
+ * Really this exists to overcome a potential performance limitation of the
+ * interface by which the dictionary solvers plug into the solver algorithm,
+ * where they would otherwise have to find their position again every iteration
+ * from scratch. However, for some iterations, the stem of the word is still the
+ * same, as the solver performs a breadth first search.
+ *
+ * A different interface for the solver dictionaries to implement may help this,
+ * or simply storing more state on the solvers. What I'd @b really like is c++20
+ * coroutines, allowing the solver dictionaries to write a tradional for loop
+ * style solver that would keep all the appropriate state in scope managed by
+ * the coroutine.
+ */
 template <class Value> class FlatCharValueMap {
 public:
   FlatCharValueMap() = default;
@@ -39,12 +54,19 @@ public:
   }
 
   using NumbElementsConsumed = std::size_t;
-  // std::pair<NumbElementsConsumed, std::optional<Value>>
-  // inline std::optional<std::pair<NumbElementsConsumed, Value>>
-  // gcc seems to take a perf hit when passed a string param and then a
-  // string_view must be created, clang not so. Both compilers seem unable to
-  // completely remove the overhead of constructing a string_view by value when
-  // passed one.
+  /** Retrieve the cached value for a word
+   *
+   * @param[in] word The word to lookup
+   * @param[in,out] consumed Number that will be incremented by how many letters
+   * are matched
+   *
+   * @returns Pointer to the `Value`, or `nullptr` if no letters matched
+   *
+   * @note gcc seems to take a perf hit when passed a string param and then a
+   * string_view must be created, clang not so. Both compilers seem unable to
+   * completely remove the overhead of constructing a string_view by value when
+   * passed one.
+   */
   inline const Value* lookup(const std::string_view& word,
                              std::size_t& consumed) {
     const auto numb_elements_consumed = this->lookup_impl(word);
@@ -60,22 +82,36 @@ public:
     // return {{numb_elements_consumed, values_[numb_elements_consumed - 1]}};
   }
 
+  /** Add a mapping from a `char` @p key to @p value
+   * @param[in] key
+   * @param[in] value
+   */
   inline void append(const char key, const Value& value) {
     keys_.push_back(key);
     values_.push_back(value);
   }
 
+  /** @overload */
   inline void append(const char key, Value&& value) {
     keys_.push_back(key);
     values_.push_back(std::move(value));
   }
 
+  /** Clears the cache */
   void clear() {
     keys_.clear();
     values_.clear();
   }
 
 private:
+  /** Lookup @p word and return how many letters are found in the cache.
+   *
+   * @param[in] word
+   *
+   * Templated (unnecessarily now) for use with string or string_view
+   *
+   * @returns 0 if none found
+   */
   template <class Str>
   inline NumbElementsConsumed lookup_impl(const Str& word) const {
     // No elems consumed if no cached keys or searching for nothing
@@ -111,14 +147,6 @@ private:
     return i;
   }
 
-  // struct KV
-  // {
-  // Value v;
-  // char k;
-  // };
-  // std::vector<KV> kvs_;
-
-  // const TrieImpl* tp_;
   std::string keys_;
   std::vector<Value> values_;
 

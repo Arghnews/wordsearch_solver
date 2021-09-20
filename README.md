@@ -50,6 +50,19 @@ NOTE: requires gnu-gold linker to build with gcc, and lld (llvm linker) to build
 
 Built and tested with gcc8, clang 10 and clang 12
 
+Uses:
+    * [conan](https://conan.io/) - package management
+    * [CMake](https://cmake.org/) - build system
+    * [fmtlib](https://fmt.dev/latest/index.html) - string formatting and printing
+    * [range-v3](https://github.com/ericniebler/range-v3) - composable functional range manipulation
+    * [boost](https://www.boost.org/) - container, iterator
+    * [catch2](https://github.com/catchorg/Catch2) - testing
+    * [Google benchmark](https://github.com/google/benchmark) - simple benchmarking
+    * [Slightly modified gperftools](https://github.com/Arghnews/gperftools) - profiling
+    * [cxxopts](https://github.com/jarro2783/cxxopts) - argument parsing
+
+NOTE: won't work on Windows because gperftools only supports linux. However this is only used for profiling purposes. Without this, it @a should work, although may need tweaking, untested.
+
 ## How to build
 
 The normal [conan](https://conan.io/) + [CMake](https://cmake.org/) build process
@@ -85,19 +98,19 @@ And build/use normally your project normally with conan
 
 # Project structure
 
-- dictionary_std_vector
+- @ref dictionary_std_vector
 
 Sorted vector of strings. Uses binary searches, so O(log(n)) where n is the number of strings for every operation.
 
 ---
 
-- dictionary_std_set
+- @ref dictionary_std_set
 
 Similar to a sorted vector, but std::set, so red-black tree implementation, with slightly worse performance than the vector, I suspect due to worse cache/memory spatial locality. Also O(log(n)) in number of words in dictionary performance.
 
 ---
 
-- trie
+- @ref trie
 
 Recursive tree structure of nodes, where each node holds a vector-like container of edges, and each edge consists of a character and a pointer to the corresponding child node. 
 To lookup a word of length "m", using a dictionary with "d" distinct characters, for example d == 26 for lowercase ascii and the English alphabet, lookup is O(m * d).
@@ -106,7 +119,7 @@ Could say that furthermore, since (in English at least) average word length is m
 
 ---
 
-- compact_trie
+- @ref compact_trie
 
 Similar to the trie, but now everything's inline, and the whole thing is in one big contiguous memory block.
 NOTE: this (currently) only works for lowercase ascii.
@@ -119,7 +132,7 @@ Lookup for a word of length m is O(m), plus likely better cache locality (unless
 
 ---
 
-- compact_trie2
+- @ref compact_trie2
 
 In the compact_trie, every node is a fixed size (happens to be 16 bytes currently on my system x64 libstdc++8). There must be at least as many nodes as words, roughly ~115k in the (slightly altered) GNU English dictionary used for this. There may be more, if for example a node is required to represent child nodes, but is not a word itself.
 
@@ -161,7 +174,7 @@ Ie. to find the child node from the example node for the letter 'c', get the
 
 ---
 
-- benchmark
+- @ref benchmark
 
 Google benchmark the time to solve a wordsearch
 
@@ -194,33 +207,34 @@ When run with gcc8 instead of clang12, see much worse performance for the compac
 
 ---
 
-- cmdline_app
+- @ref cmdline_app
 
 Cmdline app used for profiling time taken to solve a wordsearch using a particular solver and dictionary. Uses my slightly modified gperftools profiler.
 
 ---
 
-- gui_app
+- @ref gui_app
 
-Simple wordsearch gui using ImGui as backend
+Simple wordsearch gui using ImGui as backend.
+@note Whilst this is a subdirectory, it's built as an entirely standalone project, that pulls this (wordsearch_solver) project via conan.
 
 ---
 
-- solver
+- @ref solver
 
 Contains the algorithm to actually solver a wordsearch.
 Exposes types that clients should use to consume this library.
 
 ---
 
-- utility
+- @ref utility
 
 ---
 
-- cmake
+- @ref cmake
 
 ---
 
-- test
+- @ref test
 
 

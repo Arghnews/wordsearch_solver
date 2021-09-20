@@ -4,3 +4,4 @@ z/
 .clangd/
 imgui.ini
 .cache/
+session.vim

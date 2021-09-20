@@ -18,6 +18,8 @@
 // - Wait for 2050 when c++ has built in proper metaprogramming/static
 // reflection.
 
+/** Cmdline app. Used to benchmark performance of dictionary solvers.
+ */
 int main(int argc, char** argv) {
   auto options =
       cxxopts::Options("wordsearch_solver_cmdline_app",

@@ -31,6 +31,7 @@
 // std::bitset that is 4 bytes big changes performance due to whole thing being
 // approx half size (better for cache).
 
+/** namespace trie */
 namespace trie {
 
 /** Recursive immutable node based trie.
@@ -75,61 +76,13 @@ public:
   // Strings should be a range of strings
   template <class Strings> explicit Trie(Strings&& strings_in);
 
-  /** Check whether this dictionary contains a word.
-   *
-   * @param[in] word
-   */
+  /** @copydoc solver::SolverDictWrapper::contains() */
   bool contains(std::string_view word) const;
 
-  /** Check whether this dictionary may contain words that start with prefix @p
-   * word.
-   *
-   * @param[in] word
-   * @return `false` when there are no words that have @p word as a stem (and
-   * are at least 1 character longer than @p word). `true` if there may be more
-   * words with @p word as a stem.
-   *
-   * @note This may return `true` for some dictionary solver implementations
-   * even when there are in fact no more words with @p word as a stem remaining
-   * \- the naive solvers using `std::set` and `std::vector`, notably. As long
-   * as it eventually returns `false` when there are no further words with this
-   * prefix, this is acceptable, though suboptimal.
-   */
+  /** @copydoc solver::SolverDictWrapper::further() */
   bool further(std::string_view word) const;
 
-  /** For each char in suffix appended to stem, check whether this dictionary
-   * contains this word and if it may contain longer words with this prefix.
-   *
-   * @param[in] stem
-   * @param[in] suffixes
-   * @param[out] contains_further_it
-   *
-   * This function is what the solver algorithm calls every iteration to ask the
-   * dictionary solver implementation to do its work.
-   *
-   * @p contains_further_it should be assigned to and incremented like an
-   * output iterator. The value written should be a std::pair<bool, bool>.
-   *
-   * Example contains_further implementation:
-   * @code
-   * const auto* node = this->search(stem);
-   * if (!node) {
-   *   return;
-   * }
-   *
-   * for (const auto [i, c] : ranges::views::enumerate(suffixes)) {
-   *   const std::string_view suffix = {&c, 1};
-   *   const auto contains = detail::contains(*node, suffix);
-   *   const auto further = detail::further(*node, suffix);
-   *   *contains_further_it++ = {contains, further};
-   * }
-   * @endcode
-   *
-   * Each character's position in @p suffix corresponds to the order that
-   * that @p suffix's output should be written to @p contains_further_it.
-   *
-   * @p suffixes is @b not guaranteed to be sorted.
-   */
+  /** @copydoc solver::SolverDictWrapper::contains_further() */
   template <class OutputIterator>
   void contains_further(const std::string_view stem,
                         const std::string_view suffixes,

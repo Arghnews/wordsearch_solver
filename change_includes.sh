@@ -17,6 +17,8 @@ do
 
     echo "$f"
 
+    # sed -E -i "s/@copydoc trie::Trie::([^(]*)\(\)/@copydoc solver::SolverDictWrapper::\1()/" "$f"
+
     # Clang format everything
     # set -x
     # clang-format -i --style=file "$f"

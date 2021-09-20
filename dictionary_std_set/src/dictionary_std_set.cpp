@@ -36,8 +36,8 @@ std::size_t DictionaryStdSet::size() const { return dict_.size(); }
 
 bool DictionaryStdSet::empty() const { return dict_.empty(); }
 
-bool DictionaryStdSet::contains(const std::string_view key) const {
-  return dict_.find(key) != dict_.end();
+bool DictionaryStdSet::contains(const std::string_view word) const {
+  return dict_.find(word) != dict_.end();
   // return std::binary_search(dict_.begin(), dict_.end(), key);
 }
 

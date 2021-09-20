@@ -86,20 +86,23 @@ template <class Iterator> std::string node_to_string(Iterator it) {
                     make_node_view_variant(it));
 }
 
-// Ideally this function's range requirements would be significantly relaxed.
-// (InputRange and ForwardOutputIterator)
-// However it's hard to see exactly how to do this. Leaving for now
+/** Builds a node from a range of letters/suffixes.
+ *
+ * @param[in] suffixes The letters to insert into this node
+ * @param[in] is_end_of_word Whether or not a word terminates here
+ * @param[out] out The output iterator that the node is written out to
+ */
 template <class OutputIterator, class ForwardCharsRange>
-void make_node(const ForwardCharsRange& rng, OutputIterator out,
-               const bool is_end_of_word) {
+void make_node(const ForwardCharsRange& suffixes, const bool is_end_of_word,
+               OutputIterator out) {
   static_assert(ranges::sized_range<ForwardCharsRange>,
                 "The range passed to make node must be sized.");
   // static_assert(ranges::output_iterator<OutputIterator, std::uint8_t>);
-  if (rng.size() == 0) {
+  if (suffixes.size() == 0) {
     assert(is_end_of_word && "0 characters must mean it's a word end");
   }
-  assert(rng.size() < std::numeric_limits<std::uint8_t>::max());
-  const auto size = static_cast<std::uint8_t>(rng.size());
+  assert(suffixes.size() < std::numeric_limits<std::uint8_t>::max());
+  const auto size = static_cast<std::uint8_t>(suffixes.size());
 
   *out++ = size;
 
@@ -112,20 +115,23 @@ void make_node(const ForwardCharsRange& rng, OutputIterator out,
   // *out++ = 0x80UL;
   *out++ = 0x80UL & (static_cast<unsigned long>(is_end_of_word) << 7UL);
 
-  ranges::for_each(rng, [out](const auto c) mutable {
+  ranges::for_each(suffixes, [out](const auto c) mutable {
     // 1 byte per letter/data item
     *out++ = static_cast<std::uint8_t>(c);
   });
-  ranges::for_each(rng | ranges::views::drop_exactly(1), [out](auto&&) mutable {
-    // 2 bytes for each mini offset entry
-    *out++ = 255;
-    *out++ = 255;
-  });
+  ranges::for_each(suffixes | ranges::views::drop_exactly(1),
+                   [out](auto&&) mutable {
+                     // 2 bytes for each mini offset entry
+                     *out++ = 255;
+                     *out++ = 255;
+                   });
 }
 
+/** Used in construction, returns a view onto pairs of {row n, row n + 1}
+ */
 template <class DataView, class RowIndexes>
-auto make_adjacent_pairwise_rows_view(DataView&& data_view,
-                                      RowIndexes&& row_indexes) {
+auto make_adjacent_pairwise_rows_view(const DataView& data_view,
+                                      const RowIndexes& row_indexes) {
   return ranges::views::zip(utility::make_row_view(data_view, row_indexes),
                             utility::make_row_view(data_view, row_indexes) |
                                 ranges::views::drop(1));
@@ -143,6 +149,11 @@ constexpr auto sort_if_possible_impl(T&& t, int)
 
 template <class T> constexpr void sort_if_possible_impl(T&&, long) {}
 
+/** Sort if possible, but won't be a compilation error if not, then do nothing.
+ *
+ * @param[in] t Sort @p t if it may be sorted (ie. it's not const, it's a
+ * mutable container not a view)
+ */
 template <class T> constexpr void sort_if_possible(T&& t) {
   sort_if_possible_impl(std::forward<T>(t), 0);
 }
@@ -196,7 +207,7 @@ CompactTrie2::CompactTrie2(ForwardRange&& words)
   }
 }
 
-template <class T> void CompactTrie2::init(T&& words_view) {
+template <class T> void CompactTrie2::init(const T& words_view) {
 
   for (const auto& word : words_view) {
     utility::throw_if_not_lowercase_ascii(word);
@@ -212,7 +223,7 @@ template <class T> void CompactTrie2::init(T&& words_view) {
     // const auto old_row_end = static_cast<long>(data.size());
     for (auto [prefix, suffixes, is_end_of_word] : words_by_length) {
       size_ += is_end_of_word;
-      make_node(suffixes, data_insert_iter, is_end_of_word);
+      make_node(suffixes, is_end_of_word, data_insert_iter);
       // fmt::print("{} -> {}, end_of_word: {}\n", prefix,
       // suffixes | ranges::to<std::vector>(), is_end_of_word);
     }
@@ -222,6 +233,8 @@ template <class T> void CompactTrie2::init(T&& words_view) {
     rows.push_back(new_row_end);
   }
 
+  // Convert vector of indexes into data_, which is fine even if data_
+  // reallocates, into a vector of iterators, as we're done mutating data_
   for (const auto& data_index : rows) {
     assert(data_index <= data_.size());
     rows_.push_back(std::next(data_.begin(), static_cast<long>(data_index)));

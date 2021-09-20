@@ -14,6 +14,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+
+
+################################################################################
+# link_std_filesystem convenience library
+
 # We need to pass -stdc++fs as a link flag here. We could do this in conan
 # in package_info with self.cpp_info.libs += ["-lstdc++fs"]
 # However that means that consumers of this from cmake won't get the flag
@@ -29,6 +34,11 @@ add_library(link_std_filesystem::link_std_filesystem ALIAS link_std_filesystem)
 target_link_libraries(link_std_filesystem INTERFACE
     $<$<AND:$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>,$<PLATFORM_ID:Linux>>:stdc++fs>)
 
+
+
+################################################################################
+# Set default build type
+
 # https://blog.kitware.com/cmake-and-the-default-build-type/
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(default_build_type "DEBUG")
@@ -39,6 +49,10 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
         "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
+
+
+################################################################################
+# Setup compiler and linker flags
 
 string(JOIN " " COMPILER_FLAGS "-Wall -Wextra -pedantic -Wfloat-equal"
 "-Wwrite-strings -Wswitch-enum -Wunreachable-code -Wconversion"
@@ -86,6 +100,11 @@ string(APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE "${LTO}")
 
 string(APPEND CMAKE_SHARED_LINKER_FLAGS "${USE_LINKER_FLAGS}")
 
+
+
+################################################################################
+# make_compile_commands function to copy compile_commands.json to project root
+
 # Usage:
 # make_compile_commands(
     # TARGET_TO_REBUILD_ON "${PROJECT_NAME}"
@@ -111,6 +130,11 @@ add_custom_command(TARGET ${PROJECT_NAME}_after_all_built POST_BUILD
     VERBATIM
     )
 
+
+
+################################################################################
+# Define CMake variables that are used to create appropriate macros to pass
+# information to c++ depending on build configuration
 
 list(APPEND ALL_SOLVERS trie compact_trie compact_trie2 dictionary_std_vector dictionary_std_set)
 list(APPEND ALL_SOLVERS_CLASSNAMES Trie CompactTrie CompactTrie2 DictionaryStdVector DictionaryStdSet)
@@ -157,6 +181,9 @@ list(APPEND SOLVER_C_DEFINES)
 # Used in config.hpp.in as well as here
 string(TOUPPER "${PROJECT_NAME}" PROJECT_NAME_UPPERCASE)
 
+################################################################################
+# Add subdirectory for each solver requested to be built
+
 foreach(SOLVER IN LISTS WORDSEARCH_SOLVERS)
     if (NOT (SOLVER IN_LIST ALL_SOLVERS))
         message(FATAL_ERROR "Unrecognised solver \"${SOLVER}\", should be one of ${ALL_SOLVERS}")
@@ -184,9 +211,9 @@ string(JOIN "\n" config_file_content
     )
 
 
-# Build config as a tiny library so can neatly depend on it in solver/CMakeLists.txt so it gets put in the include path correctly
 
-# Or just add it to the include dirs in solver somehow but seems unneat
+################################################################################
+# Create config library which has as content the generated headers
 
 include(GNUInstallDirs)
 
@@ -227,6 +254,11 @@ install(EXPORT config-targets FILE config-targets.cmake
 
 configure_file(test/test_cases/massive_wordsearch.txt "${CMAKE_CURRENT_BINARY_DIR}" COPYONLY)
 
+
+
+################################################################################
+# Add other projects like solver and benchmark
+
 add_subdirectory(solver)
 
 add_subdirectory(benchmark)
@@ -239,7 +271,11 @@ endif()
 
 add_subdirectory(example)
 
-# Master/public library
+
+
+################################################################################
+# Master/public library for client consumption
+
 add_library(${PROJECT_NAME} INTERFACE)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} INTERFACE
@@ -253,6 +289,10 @@ target_link_libraries(${PROJECT_NAME} INTERFACE
     ${ALL_DICTIONARIES_CMAKE_LINK_LIBRARIES}
     )
 
+
+
+################################################################################
+# Export and install the library
 
 # https://cmake.org/cmake/help/latest/module/CMakePackageConfigHelpers.html
 include(CMakePackageConfigHelpers)
@@ -271,7 +311,7 @@ install(EXPORT ${PROJECT_NAME}-targets
 include(version.cmake)
 # Defines ${PROJECT_NAME}_(MAJOR|MINOR|PATCH) and ${PROJECT_NAME}_VERSION_STRING
 
-####################################
+################################################################################
 # https://cmake.org/cmake/help/latest/module/CMakePackageConfigHelpers.html
 
 # Generates a package version file in the build directory
@@ -285,7 +325,7 @@ write_basic_package_version_file(
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
 
-####################################
+################################################################################
 
 # Generate a cmake package config file
 configure_package_config_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.cmake.in"
@@ -307,10 +347,15 @@ install(FILES
     # "${PROJECT_GENERATED_HEADERS_DIR}/${PROJECT_NAME}.hpp"
     # DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}")
 
+
+
+
+################################################################################
+# Enable testing
+
 # Disabled for now because if we run in webpage we run out of memory
 # If we run in node we get
 # /home/justin/cpp/ws3/build/bin/the_test.js:40
 # throw 'using preloaded data can only be done on a web page or in a web worker';
 enable_testing()
 add_subdirectory(test)
-

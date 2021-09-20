@@ -15,23 +15,8 @@
 namespace dictionary_std_set {
 
 template <class ForwardRange>
-DictionaryStdSet::DictionaryStdSet(ForwardRange&& words)
+DictionaryStdSet::DictionaryStdSet(const ForwardRange& words)
     : DictionaryStdSet(words.begin(), words.end()) {}
-
-template <class OutputIndexIterator>
-void DictionaryStdSet::contains_further(const std::string_view stem,
-                                        const std::string_view suffixes,
-                                        OutputIndexIterator it) const {
-  // fmt::print("Dict: {}\n", dict_);
-  for (const auto suffix : suffixes) {
-    const std::string word = std::string{stem} + suffix;
-    // fmt::print("\ncontains/further for: {}\n", word);
-    const bool c = contains(word);
-    const bool f = further(word);
-    // fmt::print("contains/further for {}: {}/{}\n", word, c, f);
-    *it++ = {c, f};
-  }
-}
 
 // Actual cons that does the work
 template <
@@ -56,6 +41,21 @@ template <
         int>>
 DictionaryStdSet::DictionaryStdSet(Iterator1 first, const Iterator2 last)
     : dict_(first, last) {}
+
+template <class OutputIndexIterator>
+void DictionaryStdSet::contains_further(const std::string_view stem,
+                                        const std::string_view suffixes,
+                                        OutputIndexIterator it) const {
+  // fmt::print("Dict: {}\n", dict_);
+  for (const auto suffix : suffixes) {
+    const std::string word = std::string{stem} + suffix;
+    // fmt::print("\ncontains/further for: {}\n", word);
+    const bool c = contains(word);
+    const bool f = further(word);
+    // fmt::print("contains/further for {}: {}/{}\n", word, c, f);
+    *it++ = {c, f};
+  }
+}
 
 } // namespace dictionary_std_set
 

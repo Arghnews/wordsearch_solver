@@ -20,18 +20,17 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <initializer_list>
 #include <iterator>
+#include <limits>
 #include <optional>
 #include <ostream>
 #include <string>
 #include <string_view>
 #include <tuple>
 #include <utility>
-
-// FIXME: Remove this
-#include <iostream>
 
 namespace compact_trie2 {
 
@@ -47,23 +46,13 @@ CompactTrie2::CompactTrie2(const std::initializer_list<const char*>& words)
                      return std::string_view{string_literal};
                    })) {}
 
-// Member functions in this class that could be const aren't because the
-// EmptyNodeView and FullNodeView classes wrap iterators. These iterators are
-// into data_'s type (std::vector<std::uint8_t>). However FullNodeView
-// requires a mutable iterator (at least whilst building the data structure)
-// as it mutates underlying data. But then if you try to call this->search()
-// where search is marked as a const member, you can't because trying to make
-// a std::variant<EmptyNodeView, FullNodeView> where each holds a (mutable)
-// std::vector<std::uint8_t>::iterator won't work as you are in a const member
-// function and therefore pass them std::vector<std::uint8_t>::const_iterator.
-
 namespace {
 
-// View onto nodes representation, where the underlying is a contiguous sequence
-// of std::uint8_t s
-// This view adaptor is based on
-// http://ericniebler.github.io/range-v3/ section Utilities, Create Custom Views
-// with view_adaptor
+/** View onto nodes representation, where the underlying is a contiguous
+ * sequence of std::uint8_t s This view adaptor is based on
+ * http://ericniebler.github.io/range-v3/ section Utilities, Create Custom
+ * Views with view_adaptor
+ */
 template <typename Rng>
 class NodeIteratorRange
     : public ranges::view_adaptor<NodeIteratorRange<Rng>, Rng> {
@@ -71,8 +60,9 @@ class NodeIteratorRange
 
   using base_iterator_t = ranges::iterator_t<Rng>;
 
-  // Iterator adaptor for this range so that incrementing iterators respects the
-  // underlying node size and moves by the correct distance
+  /** Iterator adaptor for this range so that incrementing iterators respects
+   * the underlying node size and moves by the correct distance
+   */
   struct query_adaptor : public ranges::adaptor_base {
     query_adaptor() = default;
 
@@ -80,9 +70,10 @@ class NodeIteratorRange
 
     auto read(base_iterator_t const& it) const { return it; }
 
-    // This is the only interesting/non-boilerplate thing in this class, we need
-    // next to increment the underlying iterator according to the size of the
-    // node
+    /** This is the only interesting/non-boilerplate thing in this class, we
+     * need next to increment the underlying iterator according to the size of
+     * the node
+     */
     void next(base_iterator_t& it) {
       // Overkill for this when we can just read *it (vs node_size(it))
       // Leaving for now until we either have a nicer abstraction (reading *it
@@ -102,6 +93,50 @@ public:
 
   auto end_adaptor() const { return query_adaptor{}; }
 };
+
+/** @returns If @p v is in @p c, return the index, else return an empty
+ * `std::optional`.
+ */
+template <class T, class Value>
+std::optional<std::size_t> at(const T& c, Value&& v) {
+  for (auto&& [i, item] : ranges::views::enumerate(c)) {
+    if (item == v)
+      return i;
+  }
+  return {};
+}
+
+/** Checks if a character @p c is present in the node pointed to by the iterator
+ * @p it.
+ * @returns The offset of the corresponding node for @p c, in the next row.
+ * Else an empty optional if there is no next node.
+ * @param[in] it
+ * @param[in] c
+ */
+std::optional<std::size_t> next_node_offset(const DataIterator it,
+                                            const char c) {
+  auto node_variant = make_node_view_variant(it);
+  if (std::holds_alternative<EmptyNodeView>(node_variant)) {
+    return {};
+  }
+
+  FullNodeView node = std::get<FullNodeView>(node_variant);
+  const std::optional<std::size_t> i = at(node.data(), c);
+  if (!i) {
+    return {};
+  }
+
+  // Position of node in the next row
+  const std::size_t offset = node.next_row_offset();
+  if (*i == 0) {
+    return offset;
+  }
+  assert(*i > 0);
+
+  // Position of the particular letter in the node on the next row
+  const auto additional_offset = node.mini_offsets()[static_cast<long>(*i - 1)];
+  return offset + additional_offset;
+}
 
 } // namespace
 
@@ -193,7 +228,9 @@ void CompactTrie2::non_templated_rest_of_init() {
           assert(mini_offset_start <= offset);
           const auto mini_offset = offset - mini_offset_start;
           assert(mini_offset != 0);
-          it.write(mini_offset);
+          assert(mini_offset <
+                 std::size_t{std::numeric_limits<std::uint16_t>::max()});
+          it.write(static_cast<std::uint16_t>(mini_offset));
           // fmt::print("Parent node after mini_offset written: {}\n",
           // *parent_node);
           assert(row1_it != row1_end);
@@ -221,46 +258,6 @@ std::size_t CompactTrie2::data_size() const { return data_.size(); }
 
 bool CompactTrie2::empty() const { return this->size() == 0; }
 
-template <class T, class Value>
-static std::optional<std::size_t> at(const T& c, Value&& v) {
-  for (auto&& [i, item] : ranges::views::enumerate(c)) {
-    if (item == v)
-      return i;
-  }
-  return {};
-}
-
-/*
- * Checks if a character c is present in the node pointed to by the iterator it.
- * If so, returns the offset of the corresponding node for c, in the next row.
- * Returns an empty optional if not.
- */
-static std::optional<std::size_t> next_node_offset(const DataIterator it,
-                                                   const char c) {
-  auto node_variant = make_node_view_variant(it);
-  if (std::holds_alternative<EmptyNodeView>(node_variant)) {
-    return {};
-  }
-
-  FullNodeView node = std::get<FullNodeView>(node_variant);
-  const std::optional<std::size_t> i = at(node.data(), c);
-  if (!i) {
-    return {};
-  }
-
-  // Position of node in the next row
-  const std::size_t offset = node.next_row_offset();
-  if (*i == 0) {
-    return offset;
-  }
-  // *i > 0
-  assert(*i > 0);
-
-  // Position of the particular letter in the node on the next row
-  const auto additional_offset = node.mini_offsets()[static_cast<long>(*i - 1)];
-  return offset + additional_offset;
-}
-
 bool CompactTrie2::contains(const std::string_view word) const {
   if (this->empty())
     return false;
@@ -279,8 +276,6 @@ bool CompactTrie2::further(const std::string_view word) const {
 // rows_it -> the row of that iterator (will be ++ to get the next row start)
 // i -> index, if i == word.size() found end
 
-// template<class DataIterator, class RowIterator>
-// bool
 std::tuple<std::size_t, DataIterator, RowIterator>
 CompactTrie2::search(const std::string_view word, DataIterator it,
                      RowIterator rows_it) const {
@@ -293,7 +288,6 @@ CompactTrie2::search(const std::string_view word, DataIterator it,
   // auto it = data_.begin();
   // auto rows_it = rows_.begin();
 
-  // FIXME: for now so don't forget about this problem/refactor to fix
   std::size_t i = 0;
   if (use_cache) {
     const auto* cached_result = cache_.lookup(word, i);
@@ -302,10 +296,7 @@ CompactTrie2::search(const std::string_view word, DataIterator it,
     }
   }
 
-  // for (; !word.empty(); word.remove_prefix(1))
-  // std::size_t i = 0;
   for (; i < word.size();) {
-    // const char c = word.front();
     const char c = word[i];
     // fmt::print("Searching for char: {} in {}\n", c, node_to_string(it));
     const std::optional<std::size_t> next_row_offset = next_node_offset(it, c);

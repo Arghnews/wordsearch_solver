@@ -34,6 +34,7 @@
 // std::bitset that is 4 bytes big changes performance due to whole thing being
 // approx half size (better for cache).
 
+/** namespace compact_trie */
 namespace compact_trie {
 
 /** Inline contiguous immutable trie.
@@ -94,12 +95,12 @@ public:
   /** Actual constructor, all other delegate to this. */
   template <class Strings> explicit CompactTrie(Strings&& strings_in);
 
-  /** @copydoc trie::Trie::contains() */
+  /** @copydoc solver::SolverDictWrapper::contains() */
   bool contains(std::string_view word) const;
-  /** @copydoc trie::Trie::further() */
+  /** @copydoc solver::SolverDictWrapper::further() */
   bool further(std::string_view word) const;
 
-  /** @copydoc trie::Trie::contains_further() */
+  /** @copydoc solver::SolverDictWrapper::contains_further() */
   template <class OutputIterator>
   void contains_further(std::string_view stem, std::string_view suffixes,
                         OutputIterator contains_further_it) const;

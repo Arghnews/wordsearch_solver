@@ -45,6 +45,8 @@
 #include <utility>
 #include <vector>
 
+namespace gui_app {
+
 static void glfw_error_callback(int error, const char* description) {
   fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
@@ -318,7 +320,11 @@ public:
   }
 };
 
+} // namespace gui_app
+
 int main(int, char**) {
+
+  using namespace gui_app;
 
   auto data = McData{
       utility::read_file_as_lines("dictionary.txt"),
@@ -689,3 +695,4 @@ int main(int, char**) {
 
   return 0;
 }
+
